@@ -1,6 +1,7 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -12,8 +13,18 @@ interface ProgressNoteFormProps {
 }
 
 export function ProgressNoteForm({ shiftId }: ProgressNoteFormProps) {
+    const router = useRouter()
     const createNoteWithShiftId = createProgressNote.bind(null, shiftId)
     const [state, formAction, isPending] = useActionState(createNoteWithShiftId, null)
+
+    // Redirect back to shift detail after successful submission
+    useEffect(() => {
+        if (state?.success) {
+            setTimeout(() => {
+                router.push(`/dashboard/shifts/${shiftId}`)
+            }, 1500)
+        }
+    }, [state?.success, shiftId, router])
 
     return (
         <Card>

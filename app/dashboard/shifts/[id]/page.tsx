@@ -1,9 +1,9 @@
 import { getShift } from '../actions'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Calendar, Clock, MapPin, User, FileText } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Calendar, Clock, MapPin, User, FileText, Plus } from 'lucide-react'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ProgressNoteForm } from '@/components/dashboard/progress-note-form'
 
 const statusColors = {
     PLANNED: 'bg-blue-100 text-blue-700',
@@ -111,14 +111,32 @@ export default async function ShiftDetailPage({ params }: { params: { id: string
 
                     {/* Progress Notes Section */}
                     <Card>
-                        <CardHeader>
+                        <CardHeader className="flex flex-row items-center justify-between">
                             <CardTitle>Progress Notes ({shift.progressNotes.length})</CardTitle>
+                            {isAssignedWorker && (
+                                <Link href={`/dashboard/shifts/${shift.id}/add-note`}>
+                                    <Button size="sm">
+                                        <Plus className="h-4 w-4 mr-2" />
+                                        Add Note
+                                    </Button>
+                                </Link>
+                            )}
                         </CardHeader>
                         <CardContent>
                             {shift.progressNotes.length === 0 ? (
-                                <p className="text-sm text-muted-foreground text-center py-8">
-                                    No progress notes yet
-                                </p>
+                                <div className="text-center py-8">
+                                    <p className="text-sm text-muted-foreground mb-4">
+                                        No progress notes yet
+                                    </p>
+                                    {isAssignedWorker && (
+                                        <Link href={`/dashboard/shifts/${shift.id}/add-note`}>
+                                            <Button variant="outline">
+                                                <Plus className="h-4 w-4 mr-2" />
+                                                Add First Note
+                                            </Button>
+                                        </Link>
+                                    )}
+                                </div>
                             ) : (
                                 <div className="space-y-4">
                                     {shift.progressNotes.map((note) => (
@@ -166,7 +184,7 @@ export default async function ShiftDetailPage({ params }: { params: { id: string
                     </Card>
                 </div>
 
-                {/* Right Column - Client Info & Note Form */}
+                {/* Right Column - Client Info */}
                 <div className="space-y-6">
                     <Card>
                         <CardHeader>
@@ -199,11 +217,6 @@ export default async function ShiftDetailPage({ params }: { params: { id: string
                             </Link>
                         </CardContent>
                     </Card>
-
-                    {/* Progress Note Form - Only for assigned worker */}
-                    {isAssignedWorker && (
-                        <ProgressNoteForm shiftId={shift.id} />
-                    )}
                 </div>
             </div>
         </div>
