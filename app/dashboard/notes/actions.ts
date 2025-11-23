@@ -56,7 +56,7 @@ export async function createProgressNote(shiftId: string, prevState: any, formDa
 
         // Check if user is the assigned worker or a coordinator
         const isAssignedWorker = shift.workerId === session.user.id
-        const isCoordinator = ['ORG_ADMIN', 'COORDINATOR'].includes(membership.role)
+        const isCoordinator = membership.role === 'ORG_ADMIN' || membership.role === 'COORDINATOR'
 
         if (!isAssignedWorker && !isCoordinator) {
             return { error: 'You can only add notes to your own shifts' }

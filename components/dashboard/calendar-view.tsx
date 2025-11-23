@@ -29,7 +29,7 @@ const localizer = dateFnsLocalizer({
     locales,
 })
 
-const DragAndDropCalendar = withDragAndDrop(Calendar)
+const DragAndDropCalendar = withDragAndDrop(Calendar as any)
 
 // Worker color palette for visual distinction
 const WORKER_COLORS = [
@@ -331,13 +331,13 @@ export function CalendarView({ initialShifts, workers, canEdit }: CalendarViewPr
                             onNavigate={setDate}
                             onEventDrop={canEdit ? handleEventDrop : undefined}
                             onEventResize={canEdit ? handleEventResize : undefined}
-                            onSelectEvent={handleSelectEvent}
-                            eventPropGetter={eventStyleGetter}
+                            onSelectEvent={handleSelectEvent as any}
+                            eventPropGetter={eventStyleGetter as any}
                             resizable={canEdit}
                             draggableAccessor={() => canEdit}
                             style={{ height: '100%' }}
                             popup
-                            tooltipAccessor={(event: CalendarShift) => {
+                            tooltipAccessor={(event: any) => {
                                 const parts = [
                                     event.resource.clientName,
                                     event.resource.workerName,

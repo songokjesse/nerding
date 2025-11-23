@@ -16,7 +16,7 @@ export default async function ClientsPage() {
     const membership = await prisma.organisationMember.findFirst({
         where: { userId: session?.user?.id }
     })
-    const canCreate = membership && [OrgRole.ORG_ADMIN, OrgRole.COORDINATOR].includes(membership.role)
+    const canCreate = membership && (membership.role === OrgRole.ORG_ADMIN || membership.role === OrgRole.COORDINATOR)
 
     if (error) {
         return <div className="p-4 text-red-500">Error: {error}</div>

@@ -76,6 +76,13 @@ export function Navbar({ user }: NavbarProps) {
                     >
                         Members
                     </Button>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => router.push("/dashboard/reports")}
+                    >
+                        Reports
+                    </Button>
                 </div>
             </div>
             <div className="flex items-center gap-4">

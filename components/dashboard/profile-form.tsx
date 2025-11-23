@@ -41,7 +41,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
         try {
             await authClient.updateUser({
                 name: values.name,
-                email: values.email, // Note: Changing email might require verification depending on config
+                // email: values.email, // Note: Changing email might require verification depending on config
             })
             setMessage({ type: "success", text: "Profile updated successfully" })
             router.refresh()

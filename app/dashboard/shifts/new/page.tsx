@@ -20,7 +20,7 @@ export default async function NewShiftPage() {
         where: { userId: session.user.id }
     })
 
-    if (!membership || ![OrgRole.ORG_ADMIN, OrgRole.COORDINATOR].includes(membership.role)) {
+    if (!membership || (membership.role !== OrgRole.ORG_ADMIN && membership.role !== OrgRole.COORDINATOR)) {
         redirect('/dashboard')
     }
 

@@ -82,7 +82,8 @@ export async function createClient(prevState: any, formData: FormData) {
         const { membership, session } = await getOrgMembership()
 
         // Role check
-        if (![OrgRole.ORG_ADMIN, OrgRole.COORDINATOR].includes(membership.role)) {
+        // Role check
+        if (membership.role !== OrgRole.ORG_ADMIN && membership.role !== OrgRole.COORDINATOR) {
             return { error: 'Insufficient permissions' }
         }
 
@@ -129,7 +130,8 @@ export async function updateClient(id: string, prevState: any, formData: FormDat
         const { membership } = await getOrgMembership()
 
         // Role check
-        if (![OrgRole.ORG_ADMIN, OrgRole.COORDINATOR].includes(membership.role)) {
+        // Role check
+        if (membership.role !== OrgRole.ORG_ADMIN && membership.role !== OrgRole.COORDINATOR) {
             return { error: 'Insufficient permissions' }
         }
 

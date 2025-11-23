@@ -17,7 +17,7 @@ export default async function DashboardLayout({
         return redirect("/sign-in")
     }
 
-    if (session.user.banned) {
+    if ((session.user as any).banned) {
         return redirect("/banned")
     }
 
