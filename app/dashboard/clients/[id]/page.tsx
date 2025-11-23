@@ -26,7 +26,7 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
         where: { userId: session?.user?.id }
     })
 
-    const canEdit = membership && [OrgRole.ORG_ADMIN, OrgRole.COORDINATOR].includes(membership.role)
+    const canEdit = membership && ([OrgRole.ORG_ADMIN, OrgRole.COORDINATOR] as OrgRole[]).includes(membership.role)
     const notes = notesResult.notes || []
 
     return (
