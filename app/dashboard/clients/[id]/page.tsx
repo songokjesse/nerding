@@ -1,5 +1,7 @@
 import { ClientForm } from '@/components/dashboard/client-form'
+import { ClientNotes } from '@/components/dashboard/client-notes'
 import { getClient } from '../actions'
+import { getClientNotes } from '@/app/dashboard/notes/actions'
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
 import prisma from '@/lib/prisma'
@@ -8,9 +10,14 @@ import { notFound } from 'next/navigation'
 
 export default async function ClientPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params
-    const { client, error } = await getClient(id)
 
-    if (error || !client) {
+    // Fetch client and notes in parallel
+    const [clientResult, notesResult] = await Promise.all([
+        getClient(id),
+        getClientNotes(id)
+    ])
+
+    if (clientResult.error || !clientResult.client) {
         notFound()
     }
 
@@ -20,10 +27,21 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
     })
 
     const canEdit = membership && [OrgRole.ORG_ADMIN, OrgRole.COORDINATOR].includes(membership.role)
+    const notes = notesResult.notes || []
 
     return (
         <div className="p-6">
-            <ClientForm client={client} readOnly={!canEdit} />
+            <div className="grid gap-6 lg:grid-cols-2">
+                {/* Left Column - Client Form */}
+                <div>
+                    <ClientForm client={clientResult.client} readOnly={!canEdit} />
+                </div>
+
+                {/* Right Column - Progress Notes */}
+                <div>
+                    <ClientNotes notes={notes} clientName={clientResult.client.name} />
+                </div>
+            </div>
         </div>
     )
 }
