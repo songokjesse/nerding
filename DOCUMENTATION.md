@@ -41,6 +41,9 @@
 - **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
 - **Icons**: [Lucide React](https://lucide.dev/)
 - **Forms**: [React Hook Form](https://react-hook-form.com/) + [Zod](https://zod.dev/) validation
+- **Calendar**: [React Big Calendar](https://jquense.github.io/react-big-calendar/) with drag-and-drop support
+- **Drag and Drop**: [React DnD](https://react-dnd.github.io/react-dnd/) with HTML5 backend
+- **Date Utilities**: [date-fns](https://date-fns.org/) for date manipulation
 
 ### Backend
 - **Runtime**: Node.js
@@ -81,6 +84,7 @@ nerding/
 │   ├── auth.ts                   # Better Auth configuration
 │   ├── auth-client.ts            # Client-side auth utilities
 │   ├── prisma.ts                 # Prisma client instance
+│   ├── constants.ts              # NDIS service types and app constants
 │   └── utils.ts                  # General utilities
 ├── prisma/                       # Database schema and migrations
 │   └── schema.prisma             # Prisma schema definition
@@ -308,10 +312,53 @@ All routes under `/dashboard/*` require authentication. Banned users are redirec
 - Located at: [`/dashboard/members`](file:///Users/codelab/Desktop/Projects/nerding/app/dashboard/members)
 
 ### 5. Shift Management
+
+#### List View
 - Schedule shifts for clients
 - Assign support workers
 - Track shift status (Planned, Completed, Cancelled, No Show)
 - Record service type and location
+- Standardized NDIS service types via dropdown
+- View upcoming and past shifts
+- Located at: [`/dashboard/shifts`](file:///Users/codelab/Desktop/Projects/nerding/app/dashboard/shifts)
+
+#### Calendar View
+- **Visual shift scheduling** with drag-and-drop functionality
+- **Multiple view modes**: Month, Week, Day, and Agenda views
+- **Drag-and-drop editing**: 
+  - Drag shifts to reschedule (change date/time)
+  - Resize shifts to adjust duration
+  - Optimistic UI updates with error rollback
+- **Worker color coding**: Each worker assigned a unique color for easy identification
+- **Advanced filtering**:
+  - Filter by worker to see specific team member's schedule
+  - Filter by service type (Personal Care, Transport, etc.)
+  - Combine filters for precise views
+- **Permission-based editing**: 
+  - Coordinators and admins can drag/edit shifts
+  - Workers have read-only access
+- **Enhanced tooltips**: Hover over shifts to see client, worker, service type, and status
+- **Responsive design**: Adapts to mobile devices
+- Located at: [`/dashboard/shifts/calendar`](file:///Users/codelab/Desktop/Projects/nerding/app/dashboard/shifts/calendar)
+
+#### Service Type Standardization
+- **13 NDIS service categories**:
+  - Personal Care
+  - Community Access
+  - Domestic Assistance
+  - Transport
+  - Social Support
+  - Skill Development
+  - Therapy Support
+  - Nursing Care
+  - Overnight Support
+  - Group Activities
+  - Respite Care
+  - Meal Preparation
+  - Assistance with Daily Living
+- **Dropdown selection**: Replaces free-text input for data consistency
+- **NDIS compliance**: Uses standard terminology aligned with NDIS pricing schedules
+- **Better reporting**: Enables accurate service type analytics and cost breakdowns
 
 ### 6. Progress Notes
 - Document client progress during shifts
@@ -436,6 +483,8 @@ Located in [`components/ui/`](file:///Users/codelab/Desktop/Projects/nerding/com
 Located in [`components/dashboard/`](file:///Users/codelab/Desktop/Projects/nerding/components/dashboard):
 - `navbar.tsx` - Dashboard navigation bar
 - `client-form.tsx` - Client creation/editing form
+- `shift-form.tsx` - Shift creation form with NDIS service type dropdown
+- `calendar-view.tsx` - Interactive calendar with drag-and-drop shift scheduling
 - `stat-card.tsx` - Reusable statistics card with icon
 - `recent-clients.tsx` - Widget showing recently added clients
 - `upcoming-shifts.tsx` - Widget showing upcoming planned shifts
