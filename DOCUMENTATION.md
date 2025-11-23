@@ -21,6 +21,7 @@
 
 ### Key Capabilities
 - **Multi-tenancy**: Multiple organizations can operate independently within the same system
+- **Organization-Centric Dashboard**: Comprehensive dashboard showing organization stats, recent clients, upcoming shifts, and activity at a glance
 - **Client Management**: Track NDIS clients with personal details and notes
 - **Shift Scheduling**: Plan and manage support worker shifts
 - **Progress Notes**: Document client progress with incident, behavior, and medication flags
@@ -275,37 +276,48 @@ All routes under `/dashboard/*` require authentication. Banned users are redirec
 
 ## Features
 
-### 1. User Management (System Admins)
+### 1. Organization-Centric Dashboard
+- **Overview at a glance**: See your organization name, plan, and key metrics immediately
+- **Real-time statistics**: Total clients, team members, and shifts this week
+- **Recent clients**: View the 5 most recently added clients with quick links
+- **Upcoming shifts**: See the next 5 planned shifts with worker assignments
+- **Recent activity**: Monitor the latest 5 progress notes with incident/behavior/medication flags
+- **Quick actions**: Fast access to common tasks like adding clients or viewing members
+- **Server-side rendered**: Fast page loads with no client-side loading spinners
+- Located at: [`/dashboard`](file:///Users/codelab/Desktop/Projects/nerding/app/dashboard)
+
+### 2. User Management (System Admins)
 - View all users in the system
 - Promote users to different system roles
 - Ban/unban user accounts
 - Located at: [`/dashboard/admin`](file:///Users/codelab/Desktop/Projects/nerding/app/dashboard/admin)
 
-### 2. Client Management
+### 3. Client Management
 - Create, view, update clients
 - Track NDIS numbers and dates of birth
 - Add client notes
+- Organization-scoped: Only see clients in your organization
 - Located at: [`/dashboard/clients`](file:///Users/codelab/Desktop/Projects/nerding/app/dashboard/clients)
 
-### 3. Organization Member Management
+### 4. Organization Member Management
 - View organization members
 - Manage organization-level roles
 - Invite new members
 - Located at: [`/dashboard/members`](file:///Users/codelab/Desktop/Projects/nerding/app/dashboard/members)
 
-### 4. Shift Management
+### 5. Shift Management
 - Schedule shifts for clients
 - Assign support workers
 - Track shift status (Planned, Completed, Cancelled, No Show)
 - Record service type and location
 
-### 5. Progress Notes
+### 6. Progress Notes
 - Document client progress during shifts
 - Flag incidents, behaviors, and medication events
 - Track client mood and goals
 - Link notes to specific shifts
 
-### 6. Monthly Reports
+### 7. Monthly Reports
 - Generate AI-assisted monthly summaries
 - Store metrics in JSON format
 - Track report creation and review
@@ -420,8 +432,13 @@ Located in [`components/ui/`](file:///Users/codelab/Desktop/Projects/nerding/com
 
 ### Dashboard Components
 Located in [`components/dashboard/`](file:///Users/codelab/Desktop/Projects/nerding/components/dashboard):
-- `client-form.tsx` - Client creation/editing form
 - `navbar.tsx` - Dashboard navigation bar
+- `client-form.tsx` - Client creation/editing form
+- `stat-card.tsx` - Reusable statistics card with icon
+- `recent-clients.tsx` - Widget showing recently added clients
+- `upcoming-shifts.tsx` - Widget showing upcoming planned shifts
+- `recent-activity.tsx` - Widget showing recent progress notes with flags
+- `quick-actions.tsx` - Quick action buttons for common tasks
 
 ### Admin Components
 Located in [`components/admin/`](file:///Users/codelab/Desktop/Projects/nerding/components/admin):
