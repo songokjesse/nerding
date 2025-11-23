@@ -141,7 +141,7 @@ export function UserTable({ users, currentUserEmail }: UserTableProps) {
                                 </Select>
                             </TableCell>
                             <TableCell>
-                                {new Date(user.createdAt).toLocaleDateString()}
+                                {new Date(user.createdAt).toLocaleDateString('en-GB')}
                             </TableCell>
                             <TableCell className="text-right space-x-2">
                                 <Link href={`/dashboard/admin/${user.id}`}>
@@ -173,6 +173,6 @@ export function UserTable({ users, currentUserEmail }: UserTableProps) {
                     ))}
                 </TableBody>
             </Table>
-        </div>
+        </div >
     )
 }

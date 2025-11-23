@@ -3,7 +3,6 @@ import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 import { getUsers } from "./actions"
 import { UserTable } from "@/components/admin/user-table"
-import { Navbar } from "@/components/dashboard/navbar"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
@@ -29,7 +28,6 @@ export default async function AdminPage() {
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-            <Navbar user={session.user} />
             <main className="max-w-6xl mx-auto p-6 space-y-8">
                 <div className="flex items-center justify-between">
                     <div>

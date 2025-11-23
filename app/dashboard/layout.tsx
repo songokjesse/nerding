@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth'
 import prisma from '@/lib/prisma'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
+import { Navbar } from '@/components/dashboard/navbar'
 
 export default async function DashboardLayout({
     children,
@@ -33,7 +34,7 @@ export default async function DashboardLayout({
 
     return (
         <div className="min-h-screen bg-gray-100">
-            {/* We can add a dashboard sidebar/header here later */}
+            <Navbar user={session.user} />
             {children}
         </div>
     )
