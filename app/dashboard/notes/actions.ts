@@ -121,6 +121,7 @@ export async function getClientNotes(clientId: string) {
                 },
                 shift: {
                     select: {
+                        id: true,
                         startTime: true,
                         endTime: true
                     }
