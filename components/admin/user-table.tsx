@@ -17,9 +17,12 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { updateUserRole } from "@/app/dashboard/admin/actions"
+import { updateUserRole, deleteUser } from "@/app/dashboard/admin/actions"
 import { Role } from "@/generated/prisma/client/enums"
 import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Edit, Trash2 } from "lucide-react"
+import Link from "next/link"
 
 interface User {
     id: string
@@ -56,6 +59,24 @@ export function UserTable({ users, currentUserEmail }: UserTableProps) {
         }
     }
 
+    const handleDelete = async (userId: string) => {
+        if (!confirm("Are you sure you want to delete this user?")) return
+        setLoadingId(userId)
+        try {
+            const result = await deleteUser(userId)
+            if (!result.success) {
+                alert("Failed to delete user")
+            } else {
+                router.refresh()
+            }
+        } catch (error) {
+            console.error(error)
+            alert("An error occurred")
+        } finally {
+            setLoadingId(null)
+        }
+    }
+
     return (
         <div className="rounded-md border">
             <Table>
@@ -64,6 +85,7 @@ export function UserTable({ users, currentUserEmail }: UserTableProps) {
                         <TableHead className="w-[250px]">User</TableHead>
                         <TableHead>Role</TableHead>
                         <TableHead>Joined</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -98,6 +120,22 @@ export function UserTable({ users, currentUserEmail }: UserTableProps) {
                             </TableCell>
                             <TableCell>
                                 {new Date(user.createdAt).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell className="text-right space-x-2">
+                                <Link href={`/dashboard/admin/${user.id}`}>
+                                    <Button variant="ghost" size="icon">
+                                        <Edit className="w-4 h-4" />
+                                    </Button>
+                                </Link>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                    onClick={() => handleDelete(user.id)}
+                                    disabled={loadingId === user.id || user.email === currentUserEmail}
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </Button>
                             </TableCell>
                         </TableRow>
                     ))}
