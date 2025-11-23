@@ -1,33 +1,97 @@
-"use client"
-import { useRouter } from "next/navigation"
-import { useSession } from "@/lib/auth-client"
-import { Navbar } from "@/components/dashboard/navbar"
-import { useEffect } from "react";
+import { getDashboardData } from './actions'
+import { StatCard } from '@/components/dashboard/stat-card'
+import { RecentClients } from '@/components/dashboard/recent-clients'
+import { UpcomingShifts } from '@/components/dashboard/upcoming-shifts'
+import { RecentActivity } from '@/components/dashboard/recent-activity'
+import { QuickActions } from '@/components/dashboard/quick-actions'
+import { Users, UserCheck, Calendar, Building2 } from 'lucide-react'
+import { auth } from '@/lib/auth'
+import { headers } from 'next/headers'
+import { redirect } from 'next/navigation'
 
-export default function DashboardPage() {
-    const router = useRouter()
-    const { data: session, isPending } = useSession()
-    useEffect(() => {
-        if (!isPending && !session?.user) {
-            router.push("/sign-in");
-        }
-    }, [isPending, session, router]);
-    if (isPending)
-        return <p className="text-center mt-8 text-white">Loading...</p>;
-    if (!session?.user)
-        return <p className="text-center mt-8 text-white">Redirecting...</p>;
-    const { user } = session;
+export default async function DashboardPage() {
+    // Check authentication
+    const session = await auth.api.getSession({ headers: await headers() })
 
-    return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-            <Navbar user={user} />
+    if (!session?.user) {
+        redirect('/sign-in')
+    }
+
+    // Fetch dashboard data
+    const data = await getDashboardData()
+
+    if ('error' in data) {
+        return (
             <main className="p-6">
-                <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-                    <p className="text-lg">Welcome, {user.name || "User"}!</p>
-                    <p className="text-gray-500 dark:text-gray-400">Email: {user.email}</p>
+                <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg">
+                    <p className="font-medium">Error loading dashboard</p>
+                    <p className="text-sm mt-1">{data.error}</p>
                 </div>
             </main>
-        </div>
+        )
+    }
+
+    const { organisation, stats, recentClients, upcomingShifts, recentNotes } = data
+
+    return (
+        <main className="p-6 space-y-6">
+            {/* Header */}
+            <div>
+                <h1 className="text-3xl font-bold">Dashboard</h1>
+                <p className="text-muted-foreground mt-1">
+                    Welcome back, {session.user.name}!
+                </p>
+            </div>
+
+            {/* Organization Info */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-lg shadow-lg">
+                <div className="flex items-center gap-3">
+                    <Building2 className="h-8 w-8" />
+                    <div>
+                        <h2 className="text-2xl font-bold">{organisation.name}</h2>
+                        <p className="text-blue-100 text-sm">
+                            Plan: {organisation.plan.charAt(0).toUpperCase() + organisation.plan.slice(1)}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Stats Grid */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <StatCard
+                    title="Total Clients"
+                    value={stats.clientCount}
+                    icon={Users}
+                    description="Active clients in your organization"
+                />
+                <StatCard
+                    title="Team Members"
+                    value={stats.memberCount}
+                    icon={UserCheck}
+                    description="Staff members in your organization"
+                />
+                <StatCard
+                    title="Shifts This Week"
+                    value={stats.shiftsThisWeek}
+                    icon={Calendar}
+                    description="Scheduled shifts for this week"
+                />
+            </div>
+
+            {/* Main Content Grid */}
+            <div className="grid gap-6 lg:grid-cols-3">
+                {/* Left Column - 2/3 width */}
+                <div className="lg:col-span-2 space-y-6">
+                    <RecentClients clients={recentClients} />
+                    <UpcomingShifts shifts={upcomingShifts} />
+                </div>
+
+                {/* Right Column - 1/3 width */}
+                <div className="space-y-6">
+                    <QuickActions />
+                    <RecentActivity notes={recentNotes} />
+                </div>
+            </div>
+        </main>
     )
 }
