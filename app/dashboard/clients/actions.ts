@@ -42,16 +42,10 @@ export async function getClients() {
     try {
         const { membership } = await getOrgMembership()
 
-        const clients = await prisma.client.createManyAndReturn ?
-            // Fallback if createManyAndReturn is not what we want, actually we just want findMany
-            prisma.client.findMany({
-                where: { organisationId: membership.organisationId },
-                orderBy: { name: 'asc' }
-            }) :
-            prisma.client.findMany({
-                where: { organisationId: membership.organisationId },
-                orderBy: { name: 'asc' }
-            })
+        const clients = await prisma.client.findMany({
+            where: { organisationId: membership.organisationId },
+            orderBy: { name: 'asc' }
+        })
 
         return { clients }
     } catch (error) {
@@ -59,6 +53,7 @@ export async function getClients() {
         return { error: 'Failed to fetch clients' }
     }
 }
+
 
 export async function getClient(id: string) {
     try {
