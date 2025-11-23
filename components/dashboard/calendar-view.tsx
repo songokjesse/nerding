@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { NDIS_SERVICE_TYPES } from '@/lib/constants'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.css'
 
@@ -72,6 +73,7 @@ export function CalendarView({ initialShifts, workers, canEdit }: CalendarViewPr
     const [view, setView] = useState<View>('month')
     const [date, setDate] = useState(new Date())
     const [selectedWorker, setSelectedWorker] = useState<string>('all')
+    const [selectedServiceType, setSelectedServiceType] = useState<string>('all')
     const [shifts, setShifts] = useState(initialShifts)
     const [isLoading, setIsLoading] = useState(false)
 
@@ -103,9 +105,17 @@ export function CalendarView({ initialShifts, workers, canEdit }: CalendarViewPr
 
     // Convert shifts to calendar events
     const events: CalendarShift[] = useMemo(() => {
-        const filteredShifts = selectedWorker === 'all'
-            ? shifts
-            : shifts.filter((s: any) => s.workerId === selectedWorker)
+        let filteredShifts = shifts
+
+        // Filter by worker
+        if (selectedWorker !== 'all') {
+            filteredShifts = filteredShifts.filter((s: any) => s.workerId === selectedWorker)
+        }
+
+        // Filter by service type
+        if (selectedServiceType !== 'all') {
+            filteredShifts = filteredShifts.filter((s: any) => s.serviceType === selectedServiceType)
+        }
 
         return filteredShifts.map((shift: any) => ({
             id: shift.id,
@@ -123,7 +133,7 @@ export function CalendarView({ initialShifts, workers, canEdit }: CalendarViewPr
                 location: shift.location,
             }
         }))
-    }, [shifts, selectedWorker])
+    }, [shifts, selectedWorker, selectedServiceType])
 
     // Handle event drop (time change)
     const handleEventDrop = useCallback(async ({ event, start, end }: any) => {
@@ -245,7 +255,7 @@ export function CalendarView({ initialShifts, workers, canEdit }: CalendarViewPr
                     </span>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                     {/* Worker filter */}
                     <Select value={selectedWorker} onValueChange={setSelectedWorker}>
                         <SelectTrigger className="w-[180px]">
@@ -262,6 +272,21 @@ export function CalendarView({ initialShifts, workers, canEdit }: CalendarViewPr
                                         />
                                         {worker.name}
                                     </div>
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+
+                    {/* Service Type filter */}
+                    <Select value={selectedServiceType} onValueChange={setSelectedServiceType}>
+                        <SelectTrigger className="w-[200px]">
+                            <SelectValue placeholder="Filter by service" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Service Types</SelectItem>
+                            {NDIS_SERVICE_TYPES.map((type) => (
+                                <SelectItem key={type} value={type}>
+                                    {type}
                                 </SelectItem>
                             ))}
                         </SelectContent>
@@ -312,9 +337,15 @@ export function CalendarView({ initialShifts, workers, canEdit }: CalendarViewPr
                             draggableAccessor={() => canEdit}
                             style={{ height: '100%' }}
                             popup
-                            tooltipAccessor={(event: CalendarShift) =>
-                                `${event.resource.clientName}\n${event.resource.workerName}\n${event.resource.status}`
-                            }
+                            tooltipAccessor={(event: CalendarShift) => {
+                                const parts = [
+                                    event.resource.clientName,
+                                    event.resource.workerName,
+                                    event.resource.serviceType || 'No service type',
+                                    event.resource.status
+                                ]
+                                return parts.join('\n')
+                            }}
                         />
                     </DndProvider>
                 )}

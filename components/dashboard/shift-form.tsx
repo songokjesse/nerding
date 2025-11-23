@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { createShift } from '@/app/dashboard/shifts/actions'
+import { NDIS_SERVICE_TYPES } from '@/lib/constants'
 
 interface ShiftFormProps {
     clients: Array<{ id: string; name: string }>
@@ -91,14 +92,21 @@ export function ShiftForm({ clients, workers }: ShiftFormProps) {
                         </div>
                     </div>
 
-                    {/* Service Type */}
+                    {/* Service Type - Now a dropdown */}
                     <div className="space-y-2">
                         <Label htmlFor="serviceType">Service Type</Label>
-                        <Input
+                        <select
                             id="serviceType"
                             name="serviceType"
-                            placeholder="e.g., Personal Care, Community Access"
-                        />
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                            <option value="">Select service type...</option>
+                            {NDIS_SERVICE_TYPES.map((type) => (
+                                <option key={type} value={type}>
+                                    {type}
+                                </option>
+                            ))}
+                        </select>
                     </div>
 
                     {/* Location */}
