@@ -38,8 +38,45 @@ export function Navbar({ user }: NavbarProps) {
 
     return (
         <nav className="flex items-center justify-between p-4 border-b bg-white dark:bg-gray-950">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-8">
                 <h1 className="text-xl font-bold">Nerding</h1>
+                <div className="hidden md:flex items-center gap-1">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => router.push("/dashboard")}
+                    >
+                        Dashboard
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => router.push("/dashboard/clients")}
+                    >
+                        Clients
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => router.push("/dashboard/shifts")}
+                    >
+                        Shifts
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => router.push("/dashboard/my-shifts")}
+                    >
+                        My Shifts
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => router.push("/dashboard/members")}
+                    >
+                        Members
+                    </Button>
+                </div>
             </div>
             <div className="flex items-center gap-4">
                 <DropdownMenu>
