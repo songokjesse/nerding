@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { updateUserRole } from "@/app/dashboard/admin/actions"
-import { Role } from "@prisma/client"
+import { Role } from "@/generated/prisma/client/enums"
 import { useRouter } from "next/navigation"
 
 interface User {

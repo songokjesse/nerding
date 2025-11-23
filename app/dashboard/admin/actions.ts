@@ -2,7 +2,7 @@
 
 import prisma from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
-import { Role } from "@prisma/client"
+import { Role } from "@/generated/prisma/client/enums"
 
 export async function getUsers() {
     try {

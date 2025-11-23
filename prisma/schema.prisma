@@ -6,7 +6,7 @@
 
 generator client {
   provider = "prisma-client"
-  output   = "../node_modules/.prisma/client"
+  output   = "../generated/prisma/client"
 }
 
 datasource db {
@@ -14,7 +14,7 @@ datasource db {
 }
 
 model User {
-  id            String    @id
+  id            String    @id @default(cuid())
   name          String
   email         String
   emailVerified Boolean   @default(false)
@@ -24,6 +24,14 @@ model User {
   sessions      Session[]
   accounts      Account[]
   role          Role      @default(VIEWER)
+
+  organisationMemberships OrganisationMember[]
+  createdClients          Client[]
+  shiftsAsWorker          Shift[]              @relation("ShiftWorker")
+  createdShifts           Shift[]              @relation("ShiftCreatedBy")
+  authoredNotes           ProgressNote[]       @relation("NoteAuthor")
+  createdReports          MonthlyReport[]      @relation("ReportCreatedBy")
+  reviewedReports         MonthlyReport[]      @relation("ReportReviewedBy")
 
   @@unique([email])
   @@map("user")
@@ -82,4 +90,129 @@ model Verification {
 
   @@index([identifier])
   @@map("verification")
+}
+
+model Organisation {
+  id           String   @id @default(uuid())
+  name         String
+  billingEmail String?
+  plan         String   @default("free")
+  createdAt    DateTime @default(now())
+
+  members        OrganisationMember[]
+  clients        Client[]
+  shifts         Shift[]
+  progressNotes  ProgressNote[]
+  monthlyReports MonthlyReport[]
+
+  @@map("organisation")
+}
+
+model OrganisationMember {
+  id             String       @id @default(uuid())
+  organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  organisationId String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  role           OrgRole      @default(WORKER)
+  createdAt      DateTime     @default(now())
+
+  @@unique([organisationId, userId])
+  @@map("organisation_member")
+}
+
+enum OrgRole {
+  ORG_ADMIN
+  COORDINATOR
+  WORKER
+  VIEWER
+}
+
+model Client {
+  id             String       @id @default(uuid())
+  organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  organisationId String
+  name           String
+  ndisNumber     String?
+  dateOfBirth    DateTime?
+  notes          String?
+  createdAt      DateTime     @default(now())
+  createdBy      User?        @relation(fields: [createdById], references: [id])
+  createdById    String?
+
+  shifts         Shift[]
+  progressNotes  ProgressNote[]
+  monthlyReports MonthlyReport[]
+
+  @@map("client")
+}
+
+model Shift {
+  id             String       @id @default(uuid())
+  organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  organisationId String
+  client         Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId       String
+  worker         User         @relation("ShiftWorker", fields: [workerId], references: [id])
+  workerId       String
+  startTime      DateTime
+  endTime        DateTime
+  status         ShiftStatus  @default(PLANNED)
+  serviceType    String?
+  location       String?
+  createdAt      DateTime     @default(now())
+  createdBy      User?        @relation("ShiftCreatedBy", fields: [createdById], references: [id])
+  createdById    String?
+
+  progressNotes ProgressNote[]
+
+  @@map("shift")
+}
+
+enum ShiftStatus {
+  PLANNED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+model ProgressNote {
+  id             String       @id @default(uuid())
+  organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  organisationId String
+  client         Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId       String
+  shift          Shift        @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  shiftId        String
+  author         User         @relation("NoteAuthor", fields: [authorId], references: [id])
+  authorId       String
+  createdAt      DateTime     @default(now())
+  noteText       String
+  incidentFlag   Boolean      @default(false)
+  behavioursFlag Boolean      @default(false)
+  medicationFlag Boolean      @default(false)
+  mood           String?
+  goalId         String?
+
+  @@map("progress_note")
+}
+
+model MonthlyReport {
+  id             String       @id @default(uuid())
+  organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  organisationId String
+  client         Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId       String
+  reportMonth    DateTime
+  summaryText    String
+  metricsJson    Json?
+  generatedByAI  Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  createdBy      User?        @relation("ReportCreatedBy", fields: [createdById], references: [id])
+  createdById    String?
+  reviewedBy     User?        @relation("ReportReviewedBy", fields: [reviewedById], references: [id])
+  reviewedById   String?
+
+  @@unique([organisationId, clientId, reportMonth])
+  @@map("monthly_report")
 }
