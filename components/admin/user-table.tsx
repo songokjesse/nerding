@@ -17,11 +17,11 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { updateUserRole, deleteUser } from "@/app/dashboard/admin/actions"
+import { updateUserRole, deleteUser, banUser, unbanUser } from "@/app/dashboard/admin/actions"
 import { Role } from "@/generated/prisma/client/enums"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Edit, Trash2 } from "lucide-react"
+import { Edit, Trash2, Ban, CheckCircle } from "lucide-react"
 import Link from "next/link"
 
 interface User {
@@ -31,6 +31,7 @@ interface User {
     role: Role
     image: string | null
     createdAt: Date
+    banned: boolean
 }
 
 interface UserTableProps {
@@ -77,6 +78,24 @@ export function UserTable({ users, currentUserEmail }: UserTableProps) {
         }
     }
 
+    const handleBanToggle = async (userId: string, isBanned: boolean) => {
+        if (!confirm(`Are you sure you want to ${isBanned ? 'unban' : 'ban'} this user?`)) return
+        setLoadingId(userId)
+        try {
+            const result = isBanned ? await unbanUser(userId) : await banUser(userId)
+            if (!result.success) {
+                alert(`Failed to ${isBanned ? 'unban' : 'ban'} user`)
+            } else {
+                router.refresh()
+            }
+        } catch (error) {
+            console.error(error)
+            alert("An error occurred")
+        } finally {
+            setLoadingId(null)
+        }
+    }
+
     return (
         <div className="rounded-md border">
             <Table>
@@ -90,14 +109,17 @@ export function UserTable({ users, currentUserEmail }: UserTableProps) {
                 </TableHeader>
                 <TableBody>
                     {users.map((user) => (
-                        <TableRow key={user.id}>
+                        <TableRow key={user.id} className={user.banned ? "bg-red-50 dark:bg-red-900/10" : ""}>
                             <TableCell className="flex items-center gap-3">
                                 <Avatar className="h-8 w-8">
                                     <AvatarImage src={user.image || ""} />
                                     <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                                 </Avatar>
                                 <div className="flex flex-col">
-                                    <span className="font-medium">{user.name}</span>
+                                    <span className="font-medium flex items-center gap-2">
+                                        {user.name}
+                                        {user.banned && <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">Banned</span>}
+                                    </span>
                                     <span className="text-xs text-muted-foreground">{user.email}</span>
                                 </div>
                             </TableCell>
@@ -127,6 +149,16 @@ export function UserTable({ users, currentUserEmail }: UserTableProps) {
                                         <Edit className="w-4 h-4" />
                                     </Button>
                                 </Link>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className={user.banned ? "text-green-500 hover:text-green-700 hover:bg-green-50" : "text-orange-500 hover:text-orange-700 hover:bg-orange-50"}
+                                    onClick={() => handleBanToggle(user.id, user.banned)}
+                                    disabled={loadingId === user.id || user.email === currentUserEmail}
+                                    title={user.banned ? "Unban User" : "Ban User"}
+                                >
+                                    {user.banned ? <CheckCircle className="w-4 h-4" /> : <Ban className="w-4 h-4" />}
+                                </Button>
                                 <Button
                                     variant="ghost"
                                     size="icon"

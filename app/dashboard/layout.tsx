@@ -13,7 +13,11 @@ export default async function DashboardLayout({
     })
 
     if (!session?.user) {
-        redirect('/sign-in')
+        return redirect("/sign-in")
+    }
+
+    if (session.user.banned) {
+        return redirect("/banned")
     }
 
     // Check if user has any organisation memberships

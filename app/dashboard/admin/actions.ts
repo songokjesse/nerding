@@ -14,11 +14,13 @@ export async function getUsers() {
                 email: true,
                 role: true,
                 createdAt: true,
-                image: true
+                image: true,
+                banned: true
             }
         })
         return { success: true, data: users }
     } catch (error) {
+        console.error("getUsers error:", error)
         return { success: false, error: "Failed to fetch users" }
     }
 }
@@ -111,6 +113,34 @@ export async function deleteUser(userId: string) {
     } catch (error) {
         console.error('Failed to delete user:', error)
         return { error: 'Failed to delete user' }
+    }
+}
+
+export async function banUser(userId: string) {
+    try {
+        await prisma.user.update({
+            where: { id: userId },
+            data: { banned: true }
+        })
+        revalidatePath('/dashboard/admin')
+        return { success: true }
+    } catch (error) {
+        console.error('Failed to ban user:', error)
+        return { error: 'Failed to ban user' }
+    }
+}
+
+export async function unbanUser(userId: string) {
+    try {
+        await prisma.user.update({
+            where: { id: userId },
+            data: { banned: false }
+        })
+        revalidatePath('/dashboard/admin')
+        return { success: true }
+    } catch (error) {
+        console.error('Failed to unban user:', error)
+        return { error: 'Failed to unban user' }
     }
 }
 
