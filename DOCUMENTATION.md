@@ -12,6 +12,8 @@
 - [API Routes](#api-routes)
 - [Components](#components)
 - [Deployment](#deployment)
+- [TypeScript Patterns](#typescript-patterns)
+- [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -501,6 +503,49 @@ npx tsx promote-user.ts <email>
 
 ---
 
+## TypeScript Patterns
+
+### Role-Based Permission Checking
+
+When checking if a user has one of multiple allowed roles, you need to use a type assertion to avoid TypeScript errors.
+
+#### The Problem
+```typescript
+// ❌ This will cause a TypeScript error
+const canEdit = membership && [OrgRole.ORG_ADMIN, OrgRole.COORDINATOR].includes(membership.role)
+```
+
+**Error**: `Argument of type 'OrgRole' is not assignable to parameter of type '"ORG_ADMIN" | "COORDINATOR"'`
+
+**Why**: TypeScript infers the array type as `("ORG_ADMIN" | "COORDINATOR")[]`, which is narrower than the `OrgRole` type (which includes all four values: `ORG_ADMIN`, `COORDINATOR`, `WORKER`, `VIEWER`). The `.includes()` method can't accept the broader type.
+
+#### The Solution
+```typescript
+// ✅ Use a type assertion
+const canEdit = membership && ([OrgRole.ORG_ADMIN, OrgRole.COORDINATOR] as OrgRole[]).includes(membership.role)
+```
+
+The `as OrgRole[]` type assertion tells TypeScript to treat the array as accepting any `OrgRole` value, allowing the `.includes()` method to properly check membership.
+
+#### Usage Examples
+
+**Client editing permissions**:
+```typescript
+const canEdit = membership && ([OrgRole.ORG_ADMIN, OrgRole.COORDINATOR] as OrgRole[]).includes(membership.role)
+```
+
+**Shift management permissions**:
+```typescript
+const canManageShifts = membership && ([OrgRole.ORG_ADMIN, OrgRole.COORDINATOR] as OrgRole[]).includes(membership.role)
+```
+
+**Admin-only actions**:
+```typescript
+const isAdmin = membership && membership.role === OrgRole.ORG_ADMIN
+```
+
+---
+
 ## Troubleshooting
 
 ### Common Issues
@@ -522,6 +567,11 @@ npx tsx promote-user.ts <email>
 #### Prisma client errors
 - Run `npx prisma generate` to regenerate the client
 - Check that migrations are up to date with `npx prisma migrate status`
+
+#### TypeScript errors with OrgRole checking
+- **Error**: `Argument of type 'OrgRole' is not assignable to parameter of type '"ORG_ADMIN" | "COORDINATOR"'`
+- **Fix**: Use type assertion: `([OrgRole.ORG_ADMIN, OrgRole.COORDINATOR] as OrgRole[]).includes(membership.role)`
+- See [TypeScript Patterns](#typescript-patterns) for detailed explanation
 
 ---
 
