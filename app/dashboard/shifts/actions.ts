@@ -149,7 +149,7 @@ export async function createShift(prevState: any, formData: FormData) {
         const { membership, session } = await getOrgMembership()
 
         // Role check - only coordinators and admins can create shifts
-        if (![OrgRole.ORG_ADMIN, OrgRole.COORDINATOR].includes(membership.role)) {
+        if (!([OrgRole.ORG_ADMIN, OrgRole.COORDINATOR] as OrgRole[]).includes(membership.role)) {
             return { error: 'Insufficient permissions to create shifts' }
         }
 
@@ -239,7 +239,7 @@ export async function updateShiftStatus(shiftId: string, status: ShiftStatus) {
 
         // Check permissions: worker can update their own shifts, coordinators can update any
         const isAssignedWorker = shift.workerId === session.user.id
-        const isCoordinator = [OrgRole.ORG_ADMIN, OrgRole.COORDINATOR].includes(membership.role)
+        const isCoordinator = ([OrgRole.ORG_ADMIN, OrgRole.COORDINATOR] as OrgRole[]).includes(membership.role)
 
         if (!isAssignedWorker && !isCoordinator) {
             return { error: 'Insufficient permissions to update this shift' }
@@ -289,3 +289,132 @@ export async function getOrganizationWorkers() {
         return { error: 'Failed to fetch workers' }
     }
 }
+
+// Get shifts for a specific date range (for calendar view)
+export async function getShiftsForDateRange(startDate: Date, endDate: Date) {
+    try {
+        const { membership } = await getOrgMembership()
+
+        const shifts = await prisma.shift.findMany({
+            where: {
+                organisationId: membership.organisationId,
+                startTime: {
+                    gte: startDate,
+                    lte: endDate
+                }
+            },
+            include: {
+                client: { select: { id: true, name: true, ndisNumber: true } },
+                worker: { select: { id: true, name: true, email: true } },
+                createdBy: { select: { name: true } }
+            },
+            orderBy: { startTime: 'asc' }
+        })
+
+        return { shifts }
+    } catch (error) {
+        console.error('Failed to fetch shifts for date range:', error)
+        return { error: 'Failed to fetch shifts' }
+    }
+}
+
+// Update shift times (for drag-and-drop on calendar)
+export async function updateShiftTimes(shiftId: string, startTime: Date, endTime: Date) {
+    try {
+        const { membership } = await getOrgMembership()
+
+        // Permission check - only coordinators and admins can modify shift times
+        if (!([OrgRole.ORG_ADMIN, OrgRole.COORDINATOR] as OrgRole[]).includes(membership.role)) {
+            return { error: 'Insufficient permissions to modify shifts' }
+        }
+
+        // Validate times
+        if (endTime <= startTime) {
+            return { error: 'End time must be after start time' }
+        }
+
+        // Get the shift to verify it belongs to the organization
+        const shift = await prisma.shift.findFirst({
+            where: {
+                id: shiftId,
+                organisationId: membership.organisationId
+            }
+        })
+
+        if (!shift) {
+            return { error: 'Shift not found' }
+        }
+
+        // Update shift times
+        await prisma.shift.update({
+            where: { id: shiftId },
+            data: {
+                startTime,
+                endTime
+            }
+        })
+
+        revalidatePath('/dashboard/shifts')
+        revalidatePath('/dashboard/shifts/calendar')
+        revalidatePath('/dashboard/my-shifts')
+        revalidatePath(`/dashboard/shifts/${shiftId}`)
+
+        return { success: true }
+    } catch (error) {
+        console.error('Failed to update shift times:', error)
+        return { error: 'Failed to update shift times' }
+    }
+}
+
+// Reassign shift to a different worker (for drag-and-drop on calendar)
+export async function reassignShiftWorker(shiftId: string, newWorkerId: string) {
+    try {
+        const { membership } = await getOrgMembership()
+
+        // Permission check - only coordinators and admins can reassign shifts
+        if (!([OrgRole.ORG_ADMIN, OrgRole.COORDINATOR] as OrgRole[]).includes(membership.role)) {
+            return { error: 'Insufficient permissions to reassign shifts' }
+        }
+
+        // Get the shift to verify it belongs to the organization
+        const shift = await prisma.shift.findFirst({
+            where: {
+                id: shiftId,
+                organisationId: membership.organisationId
+            }
+        })
+
+        if (!shift) {
+            return { error: 'Shift not found' }
+        }
+
+        // Verify new worker is a member of the organization
+        const workerMembership = await prisma.organisationMember.findFirst({
+            where: {
+                userId: newWorkerId,
+                organisationId: membership.organisationId
+            }
+        })
+
+        if (!workerMembership) {
+            return { error: 'Worker not found in your organization' }
+        }
+
+        // Update shift worker
+        await prisma.shift.update({
+            where: { id: shiftId },
+            data: { workerId: newWorkerId }
+        })
+
+        revalidatePath('/dashboard/shifts')
+        revalidatePath('/dashboard/shifts/calendar')
+        revalidatePath('/dashboard/my-shifts')
+        revalidatePath(`/dashboard/shifts/${shiftId}`)
+
+        return { success: true }
+    } catch (error) {
+        console.error('Failed to reassign shift worker:', error)
+        return { error: 'Failed to reassign shift worker' }
+    }
+}
+

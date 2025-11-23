@@ -1,7 +1,7 @@
 import { getShifts } from './actions'
 import { ShiftCard } from '@/components/dashboard/shift-card'
 import { Button } from '@/components/ui/button'
-import { Plus } from 'lucide-react'
+import { Plus, Calendar } from 'lucide-react'
 import Link from 'next/link'
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
@@ -15,7 +15,7 @@ export default async function ShiftsPage() {
     const membership = await prisma.organisationMember.findFirst({
         where: { userId: session?.user?.id }
     })
-    const canCreate = membership && [OrgRole.ORG_ADMIN, OrgRole.COORDINATOR].includes(membership.role)
+    const canCreate = membership && ([OrgRole.ORG_ADMIN, OrgRole.COORDINATOR] as OrgRole[]).includes(membership.role)
 
     const { shifts, error } = await getShifts()
 
@@ -39,14 +39,22 @@ export default async function ShiftsPage() {
         <div className="p-6 space-y-6">
             <div className="flex justify-between items-center">
                 <h1 className="text-3xl font-bold">Shifts</h1>
-                {canCreate && (
-                    <Link href="/dashboard/shifts/new">
-                        <Button>
-                            <Plus className="w-4 h-4 mr-2" />
-                            Create Shift
+                <div className="flex gap-2">
+                    <Link href="/dashboard/shifts/calendar">
+                        <Button variant="outline">
+                            <Calendar className="w-4 h-4 mr-2" />
+                            Calendar View
                         </Button>
                     </Link>
-                )}
+                    {canCreate && (
+                        <Link href="/dashboard/shifts/new">
+                            <Button>
+                                <Plus className="w-4 h-4 mr-2" />
+                                Create Shift
+                            </Button>
+                        </Link>
+                    )}
+                </div>
             </div>
 
             {/* Upcoming Shifts */}
