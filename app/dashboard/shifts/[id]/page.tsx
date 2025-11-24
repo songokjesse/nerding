@@ -32,6 +32,9 @@ export default async function ShiftDetailPage({ params }: { params: Promise<{ id
 
     const { modules } = await getClientModules(shift.clientId)
     const bowelMonitoringEnabled = modules?.some(m => m.moduleType === ModuleType.BOWEL_MONITORING && m.isEnabled)
+    const fluidIntakeEnabled = modules?.some(m => m.moduleType === ModuleType.FLUID_INTAKE && m.isEnabled)
+    const seizureMonitoringEnabled = modules?.some(m => m.moduleType === ModuleType.SEIZURE_MONITORING && m.isEnabled)
+    const behaviourObservationEnabled = modules?.some(m => m.moduleType === ModuleType.BEHAVIOUR_OBSERVATION && m.isEnabled)
 
     const startDate = new Date(shift.startTime)
     const endDate = new Date(shift.endTime)
@@ -117,10 +120,13 @@ export default async function ShiftDetailPage({ params }: { params: Promise<{ id
                     </Card>
 
                     {/* Clinical Observations Section */}
-                    {isAssignedWorker && bowelMonitoringEnabled && (
+                    {isAssignedWorker && (
                         <ShiftObservationSection
                             shiftId={shift.id}
                             bowelMonitoringEnabled={!!bowelMonitoringEnabled}
+                            fluidIntakeEnabled={!!fluidIntakeEnabled}
+                            seizureMonitoringEnabled={!!seizureMonitoringEnabled}
+                            behaviourObservationEnabled={!!behaviourObservationEnabled}
                         />
                     )}
 
