@@ -31,6 +31,7 @@ const formSchema = z.object({
 export default function SignIn() {
     const router = useRouter()
     const [error, setError] = useState<string | null>(null)
+    const [isLoading, setIsLoading] = useState(false)
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -41,16 +42,24 @@ export default function SignIn() {
     })
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
-        setError(null)
-        const res = await signIn.email({
-            email: values.email,
-            password: values.password,
-        })
+        if (isLoading) return // Prevent double-click
 
-        if (res.error) {
-            setError(res.error.message || "Something went wrong.")
-        } else {
-            router.push("/dashboard")
+        setIsLoading(true)
+        setError(null)
+
+        try {
+            const res = await signIn.email({
+                email: values.email,
+                password: values.password,
+            })
+
+            if (res.error) {
+                setError(res.error.message || "Something went wrong.")
+            } else {
+                router.push("/dashboard")
+            }
+        } finally {
+            setIsLoading(false)
         }
     }
 
@@ -90,8 +99,8 @@ export default function SignIn() {
                                     </FormItem>
                                 )}
                             />
-                            <Button type="submit" className="w-full">
-                                Sign In
+                            <Button type="submit" className="w-full" disabled={isLoading}>
+                                {isLoading ? "Signing in..." : "Sign In"}
                             </Button>
                         </form>
                     </Form>
