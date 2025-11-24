@@ -11,7 +11,7 @@ import { ModuleType } from "@/generated/prisma/client/enums"
 import { Activity } from "lucide-react"
 
 interface BowelMonitoringCardProps {
-    onSave: (data: any) => void
+    onSave: (data: any) => Promise<void>
     isSaving: boolean
 }
 
@@ -30,39 +30,50 @@ export function BowelMonitoringCard({ onSave, isSaving }: BowelMonitoringCardPro
     const [consistency, setConsistency] = useState<string>("")
     const [color, setColor] = useState<string>("")
     const [concerns, setConcerns] = useState<string>("")
+    const [isSubmitting, setIsSubmitting] = useState(false)
     // Default to current time in HH:MM format
     const [time, setTime] = useState<string>(() => {
         const now = new Date()
         return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
     })
 
-    const handleSave = () => {
-        // Construct date from today's date and selected time
-        const now = new Date()
-        const [hours, minutes] = time.split(':').map(Number)
-        const recordedAt = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes)
+    const handleSave = async () => {
+        if (isSubmitting || isSaving) return // Prevent double-click
 
-        onSave({
-            moduleType: ModuleType.BOWEL_MONITORING,
-            data: {
-                type,
-                consistency,
-                color,
-                concerns,
-                recordedAt: recordedAt.toISOString()
-            }
-        })
-        // Reset form
-        setType("")
-        setConsistency("")
-        setColor("")
-        setConcerns("")
-        // Reset time to current
-        const current = new Date()
-        setTime(`${String(current.getHours()).padStart(2, '0')}:${String(current.getMinutes()).padStart(2, '0')}`)
+        setIsSubmitting(true) // Immediate feedback
+
+        try {
+            // Construct date from today's date and selected time
+            const now = new Date()
+            const [hours, minutes] = time.split(':').map(Number)
+            const recordedAt = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes)
+
+            await onSave({
+                moduleType: ModuleType.BOWEL_MONITORING,
+                data: {
+                    type,
+                    consistency,
+                    color,
+                    concerns,
+                    recordedAt: recordedAt.toISOString()
+                }
+            })
+
+            // Reset form only on success
+            setType("")
+            setConsistency("")
+            setColor("")
+            setConcerns("")
+            // Reset time to current
+            const current = new Date()
+            setTime(`${String(current.getHours()).padStart(2, '0')}:${String(current.getMinutes()).padStart(2, '0')}`)
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     const isValid = type && consistency && color && time
+    const isDisabled = !isValid || isSubmitting || isSaving
 
     return (
         <Card className="border-purple-200 dark:border-purple-900">
@@ -148,10 +159,10 @@ export function BowelMonitoringCard({ onSave, isSaving }: BowelMonitoringCardPro
                 <Button
                     id="save-observation-btn"
                     onClick={handleSave}
-                    disabled={!isValid || isSaving}
+                    disabled={isDisabled}
                     className="w-full bg-purple-600 hover:bg-purple-700"
                 >
-                    {isSaving ? "Saving..." : "Save Observation"}
+                    {isSubmitting || isSaving ? "Saving..." : "Save Observation"}
                 </Button>
             </CardContent>
         </Card>

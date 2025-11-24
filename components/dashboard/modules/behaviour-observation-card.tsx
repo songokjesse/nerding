@@ -10,7 +10,7 @@ import { ModuleType } from "@/generated/prisma/client/enums"
 import { Eye } from "lucide-react"
 
 interface BehaviourObservationCardProps {
-    onSave: (data: any) => void
+    onSave: (data: any) => Promise<void>
     isSaving: boolean
 }
 
@@ -21,43 +21,54 @@ export function BehaviourObservationCard({ onSave, isSaving }: BehaviourObservat
     const [intervention, setIntervention] = useState<string>("")
     const [outcome, setOutcome] = useState<string>("")
     const [notes, setNotes] = useState<string>("")
+    const [isSubmitting, setIsSubmitting] = useState(false)
     // Default to current time in HH:MM format
     const [time, setTime] = useState<string>(() => {
         const now = new Date()
         return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
     })
 
-    const handleSave = () => {
-        // Construct date from today's date and selected time
-        const now = new Date()
-        const [hours, minutes] = time.split(':').map(Number)
-        const recordedAt = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes)
+    const handleSave = async () => {
+        if (isSubmitting || isSaving) return // Prevent double-click
 
-        onSave({
-            moduleType: ModuleType.BEHAVIOUR_OBSERVATION,
-            data: {
-                behaviourType,
-                severity,
-                triggers,
-                intervention,
-                outcome,
-                notes,
-                recordedAt: recordedAt.toISOString()
-            }
-        })
-        // Reset form
-        setBehaviourType("")
-        setSeverity("")
-        setTriggers("")
-        setIntervention("")
-        setOutcome("")
-        setNotes("")
-        // Reset time to current
-        const current = new Date()
-        setTime(`${String(current.getHours()).padStart(2, '0')}:${String(current.getMinutes()).padStart(2, '0')}`)
+        setIsSubmitting(true) // Immediate feedback
+
+        try {
+            // Construct date from today's date and selected time
+            const now = new Date()
+            const [hours, minutes] = time.split(':').map(Number)
+            const recordedAt = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes)
+
+            await onSave({
+                moduleType: ModuleType.BEHAVIOUR_OBSERVATION,
+                data: {
+                    behaviourType,
+                    severity,
+                    triggers,
+                    intervention,
+                    outcome,
+                    notes,
+                    recordedAt: recordedAt.toISOString()
+                }
+            })
+
+            // Reset form only on success
+            setBehaviourType("")
+            setSeverity("")
+            setTriggers("")
+            setIntervention("")
+            setOutcome("")
+            setNotes("")
+            // Reset time to current
+            const current = new Date()
+            setTime(`${String(current.getHours()).padStart(2, '0')}:${String(current.getMinutes()).padStart(2, '0')}`)
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     const isValid = behaviourType && severity && triggers && intervention && outcome && time
+    const isDisabled = !isValid || isSubmitting || isSaving
 
     return (
         <Card className="border-orange-200 dark:border-orange-900">
@@ -160,10 +171,10 @@ export function BehaviourObservationCard({ onSave, isSaving }: BehaviourObservat
                 <Button
                     id="save-observation-btn"
                     onClick={handleSave}
-                    disabled={!isValid || isSaving}
+                    disabled={isDisabled}
                     className="w-full bg-orange-600 hover:bg-orange-700"
                 >
-                    {isSaving ? "Saving..." : "Save Observation"}
+                    {isSubmitting || isSaving ? "Saving..." : "Save Observation"}
                 </Button>
             </CardContent>
         </Card>

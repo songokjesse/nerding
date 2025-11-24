@@ -11,7 +11,7 @@ import { ModuleType } from "@/generated/prisma/client/enums"
 import { Brain } from "lucide-react"
 
 interface SeizureMonitoringCardProps {
-    onSave: (data: any) => void
+    onSave: (data: any) => Promise<void>
     isSaving: boolean
 }
 
@@ -21,41 +21,52 @@ export function SeizureMonitoringCard({ onSave, isSaving }: SeizureMonitoringCar
     const [severity, setSeverity] = useState<string>("")
     const [postIctalState, setPostIctalState] = useState<string>("")
     const [notes, setNotes] = useState<string>("")
+    const [isSubmitting, setIsSubmitting] = useState(false)
     // Default to current time in HH:MM format
     const [time, setTime] = useState<string>(() => {
         const now = new Date()
         return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
     })
 
-    const handleSave = () => {
-        // Construct date from today's date and selected time
-        const now = new Date()
-        const [hours, minutes] = time.split(':').map(Number)
-        const recordedAt = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes)
+    const handleSave = async () => {
+        if (isSubmitting || isSaving) return // Prevent double-click
 
-        onSave({
-            moduleType: ModuleType.SEIZURE_MONITORING,
-            data: {
-                seizureType,
-                duration: parseInt(duration),
-                severity,
-                postIctalState,
-                notes,
-                recordedAt: recordedAt.toISOString()
-            }
-        })
-        // Reset form
-        setSeizureType("")
-        setDuration("")
-        setSeverity("")
-        setPostIctalState("")
-        setNotes("")
-        // Reset time to current
-        const current = new Date()
-        setTime(`${String(current.getHours()).padStart(2, '0')}:${String(current.getMinutes()).padStart(2, '0')}`)
+        setIsSubmitting(true) // Immediate feedback
+
+        try {
+            // Construct date from today's date and selected time
+            const now = new Date()
+            const [hours, minutes] = time.split(':').map(Number)
+            const recordedAt = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes)
+
+            await onSave({
+                moduleType: ModuleType.SEIZURE_MONITORING,
+                data: {
+                    seizureType,
+                    duration: parseInt(duration),
+                    severity,
+                    postIctalState,
+                    notes,
+                    recordedAt: recordedAt.toISOString()
+                }
+            })
+
+            // Reset form only on success
+            setSeizureType("")
+            setDuration("")
+            setSeverity("")
+            setPostIctalState("")
+            setNotes("")
+            // Reset time to current
+            const current = new Date()
+            setTime(`${String(current.getHours()).padStart(2, '0')}:${String(current.getMinutes()).padStart(2, '0')}`)
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     const isValid = seizureType && duration && severity && time && parseInt(duration) > 0
+    const isDisabled = !isValid || isSubmitting || isSaving
 
     return (
         <Card className="border-red-200 dark:border-red-900">
@@ -144,10 +155,10 @@ export function SeizureMonitoringCard({ onSave, isSaving }: SeizureMonitoringCar
                 <Button
                     id="save-observation-btn"
                     onClick={handleSave}
-                    disabled={!isValid || isSaving}
+                    disabled={isDisabled}
                     className="w-full bg-red-600 hover:bg-red-700"
                 >
-                    {isSaving ? "Saving..." : "Save Observation"}
+                    {isSubmitting || isSaving ? "Saving..." : "Save Observation"}
                 </Button>
             </CardContent>
         </Card>

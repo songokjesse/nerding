@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { signOut } from "@/lib/auth-client"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -41,48 +42,54 @@ export function Navbar({ user }: NavbarProps) {
             <div className="flex items-center gap-8">
                 <h1 className="text-xl font-bold">CareNotely</h1>
                 <div className="hidden md:flex items-center gap-1">
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => router.push("/dashboard")}
-                    >
-                        Dashboard
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => router.push("/dashboard/clients")}
-                    >
-                        Clients
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => router.push("/dashboard/shifts")}
-                    >
-                        Shifts
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => router.push("/dashboard/my-shifts")}
-                    >
-                        My Shifts
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => router.push("/dashboard/members")}
-                    >
-                        Members
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => router.push("/dashboard/reports")}
-                    >
-                        Reports
-                    </Button>
+                    <Link href="/dashboard" prefetch>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                        >
+                            Dashboard
+                        </Button>
+                    </Link>
+                    <Link href="/dashboard/clients" prefetch>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                        >
+                            Clients
+                        </Button>
+                    </Link>
+                    <Link href="/dashboard/shifts" prefetch>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                        >
+                            Shifts
+                        </Button>
+                    </Link>
+                    <Link href="/dashboard/my-shifts" prefetch>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                        >
+                            My Shifts
+                        </Button>
+                    </Link>
+                    <Link href="/dashboard/members" prefetch>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                        >
+                            Members
+                        </Button>
+                    </Link>
+                    <Link href="/dashboard/reports" prefetch>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                        >
+                            Reports
+                        </Button>
+                    </Link>
                 </div>
             </div>
             <div className="flex items-center gap-4">

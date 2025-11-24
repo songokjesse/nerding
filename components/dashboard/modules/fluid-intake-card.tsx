@@ -11,7 +11,7 @@ import { ModuleType } from "@/generated/prisma/client/enums"
 import { Droplets } from "lucide-react"
 
 interface FluidIntakeCardProps {
-    onSave: (data: any) => void
+    onSave: (data: any) => Promise<void>
     isSaving: boolean
 }
 
@@ -19,37 +19,48 @@ export function FluidIntakeCard({ onSave, isSaving }: FluidIntakeCardProps) {
     const [fluidType, setFluidType] = useState<string>("")
     const [amount, setAmount] = useState<string>("")
     const [notes, setNotes] = useState<string>("")
+    const [isSubmitting, setIsSubmitting] = useState(false)
     // Default to current time in HH:MM format
     const [time, setTime] = useState<string>(() => {
         const now = new Date()
         return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
     })
 
-    const handleSave = () => {
-        // Construct date from today's date and selected time
-        const now = new Date()
-        const [hours, minutes] = time.split(':').map(Number)
-        const recordedAt = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes)
+    const handleSave = async () => {
+        if (isSubmitting || isSaving) return // Prevent double-click
 
-        onSave({
-            moduleType: ModuleType.FLUID_INTAKE,
-            data: {
-                fluidType,
-                amount: parseInt(amount),
-                notes,
-                recordedAt: recordedAt.toISOString()
-            }
-        })
-        // Reset form
-        setFluidType("")
-        setAmount("")
-        setNotes("")
-        // Reset time to current
-        const current = new Date()
-        setTime(`${String(current.getHours()).padStart(2, '0')}:${String(current.getMinutes()).padStart(2, '0')}`)
+        setIsSubmitting(true) // Immediate feedback
+
+        try {
+            // Construct date from today's date and selected time
+            const now = new Date()
+            const [hours, minutes] = time.split(':').map(Number)
+            const recordedAt = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes)
+
+            await onSave({
+                moduleType: ModuleType.FLUID_INTAKE,
+                data: {
+                    fluidType,
+                    amount: parseInt(amount),
+                    notes,
+                    recordedAt: recordedAt.toISOString()
+                }
+            })
+
+            // Reset form only on success
+            setFluidType("")
+            setAmount("")
+            setNotes("")
+            // Reset time to current
+            const current = new Date()
+            setTime(`${String(current.getHours()).padStart(2, '0')}:${String(current.getMinutes()).padStart(2, '0')}`)
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     const isValid = fluidType && amount && time && parseInt(amount) > 0
+    const isDisabled = !isValid || isSubmitting || isSaving
 
     return (
         <Card className="border-blue-200 dark:border-blue-900">
@@ -115,10 +126,10 @@ export function FluidIntakeCard({ onSave, isSaving }: FluidIntakeCardProps) {
                 <Button
                     id="save-observation-btn"
                     onClick={handleSave}
-                    disabled={!isValid || isSaving}
+                    disabled={isDisabled}
                     className="w-full bg-blue-600 hover:bg-blue-700"
                 >
-                    {isSaving ? "Saving..." : "Save Observation"}
+                    {isSubmitting || isSaving ? "Saving..." : "Save Observation"}
                 </Button>
             </CardContent>
         </Card>

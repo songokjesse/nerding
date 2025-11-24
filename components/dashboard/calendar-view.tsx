@@ -154,10 +154,9 @@ export function CalendarView({ initialShifts, workers, canEdit }: CalendarViewPr
             // Rollback on error
             setShifts(shifts)
             alert(result.error)
-        } else {
-            router.refresh()
         }
-    }, [shifts, canEdit, router])
+        // No need to refresh - optimistic update already applied
+    }, [shifts, canEdit])
 
     // Handle event resize
     const handleEventResize = useCallback(async ({ event, start, end }: any) => {
@@ -178,10 +177,9 @@ export function CalendarView({ initialShifts, workers, canEdit }: CalendarViewPr
             // Rollback on error
             setShifts(shifts)
             alert(result.error)
-        } else {
-            router.refresh()
         }
-    }, [shifts, canEdit, router])
+        // No need to refresh - optimistic update already applied
+    }, [shifts, canEdit])
 
     // Handle event click (navigate to shift detail)
     const handleSelectEvent = useCallback((event: CalendarShift) => {
