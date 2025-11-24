@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Nerding with Jesse",
+  title: "CareNotely",
   description: "Trying to understand Nextjs",
 };
 

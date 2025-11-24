@@ -39,7 +39,7 @@ export function Navbar({ user }: NavbarProps) {
     return (
         <nav className="flex items-center justify-between p-4 border-b bg-white dark:bg-gray-950">
             <div className="flex items-center gap-8">
-                <h1 className="text-xl font-bold">Nerding</h1>
+                <h1 className="text-xl font-bold">CareNotely</h1>
                 <div className="hidden md:flex items-center gap-1">
                     <Button
                         variant="ghost"

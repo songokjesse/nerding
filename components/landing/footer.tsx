@@ -8,7 +8,7 @@ export function Footer() {
                 <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
                     <div className="flex items-center gap-2">
                         <Sparkles className="h-5 w-5 text-purple-500" />
-                        <span className="text-lg font-bold text-white">Nerding</span>
+                        <span className="text-lg font-bold text-white">CareNotely</span>
                     </div>
 
                     <div className="flex gap-8 text-sm">
@@ -18,7 +18,7 @@ export function Footer() {
                     </div>
 
                     <div className="text-sm">
-                        © {new Date().getFullYear()} Nerding. All rights reserved.
+                        © {new Date().getFullYear()} CareNotely. All rights reserved.
                     </div>
                 </div>
             </div>

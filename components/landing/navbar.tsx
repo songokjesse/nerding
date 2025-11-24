@@ -8,7 +8,7 @@ export function Navbar() {
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2 text-lg font-bold text-white transition-colors hover:text-zinc-300">
           <Sparkles className="h-5 w-5 text-purple-500" />
-          <span>Nerding</span>
+          <span>CareNotely</span>
         </Link>
         <nav className="flex items-center gap-6">
           <Link
