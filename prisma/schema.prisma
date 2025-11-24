@@ -144,6 +144,7 @@ model Client {
   shifts         Shift[]
   progressNotes  ProgressNote[]
   monthlyReports MonthlyReport[]
+  enabledModules ClientModule[]
 
   @@map("client")
 }
@@ -178,22 +179,23 @@ enum ShiftStatus {
 }
 
 model ProgressNote {
-  id             String       @id @default(uuid())
-  organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  id             String        @id @default(uuid())
+  organisation   Organisation  @relation(fields: [organisationId], references: [id], onDelete: Cascade)
   organisationId String
-  client         Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  client         Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
   clientId       String
-  shift          Shift        @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  shift          Shift         @relation(fields: [shiftId], references: [id], onDelete: Cascade)
   shiftId        String
-  author         User         @relation("NoteAuthor", fields: [authorId], references: [id])
+  author         User          @relation("NoteAuthor", fields: [authorId], references: [id])
   authorId       String
-  createdAt      DateTime     @default(now())
+  createdAt      DateTime      @default(now())
   noteText       String
-  incidentFlag   Boolean      @default(false)
-  behavioursFlag Boolean      @default(false)
-  medicationFlag Boolean      @default(false)
+  incidentFlag   Boolean       @default(false)
+  behavioursFlag Boolean       @default(false)
+  medicationFlag Boolean       @default(false)
   mood           String?
   goalId         String?
+  observations   Observation[]
 
   @@map("progress_note")
 }
@@ -216,4 +218,35 @@ model MonthlyReport {
 
   @@unique([organisationId, clientId, reportMonth])
   @@map("monthly_report")
+}
+
+model ClientModule {
+  id         String     @id @default(uuid())
+  client     Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId   String
+  moduleType ModuleType
+  isEnabled  Boolean    @default(true)
+  config     Json? // For any module-specific settings
+  updatedAt  DateTime   @updatedAt
+
+  @@unique([clientId, moduleType])
+  @@map("client_module")
+}
+
+enum ModuleType {
+  BOWEL_MONITORING
+  FLUID_INTAKE
+  BEHAVIOUR_OBSERVATION
+  SEIZURE_MONITORING
+}
+
+model Observation {
+  id             String       @id @default(uuid())
+  progressNote   ProgressNote @relation(fields: [progressNoteId], references: [id], onDelete: Cascade)
+  progressNoteId String
+  type           ModuleType
+  data           Json // Flexible structure for different observation types
+  recordedAt     DateTime     @default(now())
+
+  @@map("observation")
 }

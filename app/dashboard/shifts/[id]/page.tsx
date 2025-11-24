@@ -1,9 +1,12 @@
-import { getShift } from '../actions'
+import { getShift, saveObservation } from '../actions'
+import { getClientModules } from '@/app/dashboard/clients/modules'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Calendar, Clock, MapPin, User, FileText, Plus } from 'lucide-react'
+import { Calendar, Clock, MapPin, User, FileText, Plus, Activity } from 'lucide-react'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import { ModuleType } from '@/generated/prisma/client/enums'
+import { ShiftObservationSection } from '@/components/dashboard/shift-observation-section'
 
 const statusColors = {
     PLANNED: 'bg-blue-100 text-blue-700',
@@ -19,12 +22,16 @@ const statusLabels = {
     NO_SHOW: 'No Show'
 }
 
-export default async function ShiftDetailPage({ params }: { params: { id: string } }) {
-    const { shift, isAssignedWorker, error } = await getShift(params.id)
+export default async function ShiftDetailPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params
+    const { shift, isAssignedWorker, error } = await getShift(id)
 
     if (error || !shift) {
         notFound()
     }
+
+    const { modules } = await getClientModules(shift.clientId)
+    const bowelMonitoringEnabled = modules?.some(m => m.moduleType === ModuleType.BOWEL_MONITORING && m.isEnabled)
 
     const startDate = new Date(shift.startTime)
     const endDate = new Date(shift.endTime)
@@ -109,6 +116,14 @@ export default async function ShiftDetailPage({ params }: { params: { id: string
                         </CardContent>
                     </Card>
 
+                    {/* Clinical Observations Section */}
+                    {isAssignedWorker && bowelMonitoringEnabled && (
+                        <ShiftObservationSection
+                            shiftId={shift.id}
+                            bowelMonitoringEnabled={!!bowelMonitoringEnabled}
+                        />
+                    )}
+
                     {/* Progress Notes Section */}
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between">
@@ -150,6 +165,30 @@ export default async function ShiftDetailPage({ params }: { params: { id: string
                                                 </div>
                                             </div>
                                             <p className="text-sm whitespace-pre-wrap">{note.noteText}</p>
+
+                                            {/* Display Observations */}
+                                            {/* @ts-ignore - observations might not be typed yet in prisma client if not fully regenerated/picked up */}
+                                            {note.observations && note.observations.length > 0 && (
+                                                <div className="mt-3 space-y-2">
+                                                    {/* @ts-ignore */}
+                                                    {note.observations.map((obs) => (
+                                                        <div key={obs.id} className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-md border border-purple-100 dark:border-purple-900">
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <Activity className="h-4 w-4 text-purple-600" />
+                                                                <span className="text-sm font-semibold text-purple-900 dark:text-purple-100">
+                                                                    {obs.type === ModuleType.BOWEL_MONITORING ? 'Bowel Observation' : obs.type}
+                                                                </span>
+                                                            </div>
+                                                            <div className="text-sm text-purple-800 dark:text-purple-200 grid grid-cols-2 gap-2">
+                                                                {obs.data.type && <p>Type: {obs.data.type}</p>}
+                                                                {obs.data.consistency && <p>Consistency: {obs.data.consistency}</p>}
+                                                                {obs.data.color && <p>Color: {obs.data.color}</p>}
+                                                                {obs.data.concerns && <p className="col-span-2">Concerns: {obs.data.concerns}</p>}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
 
                                             {note.mood && (
                                                 <p className="text-sm text-muted-foreground mt-2">

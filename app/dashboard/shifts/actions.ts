@@ -418,3 +418,70 @@ export async function reassignShiftWorker(shiftId: string, newWorkerId: string) 
     }
 }
 
+
+// Save an observation (creates a progress note if one doesn't exist for the shift)
+export async function saveObservation(shiftId: string, observationData: { moduleType: any, data: any }) {
+    try {
+        const { membership, session } = await getOrgMembership()
+
+        // Get shift
+        const shift = await prisma.shift.findFirst({
+            where: { id: shiftId, organisationId: membership.organisationId },
+            include: { client: true }
+        })
+
+        if (!shift) {
+            return { error: 'Shift not found' }
+        }
+
+        // Check if user is assigned worker or coordinator
+        const isAssignedWorker = shift.workerId === session.user.id
+        const isCoordinator = ([OrgRole.ORG_ADMIN, OrgRole.COORDINATOR] as OrgRole[]).includes(membership.role)
+
+        if (!isAssignedWorker && !isCoordinator) {
+            return { error: 'Insufficient permissions' }
+        }
+
+        // Find or create progress note for this shift/author
+        // Note: We're assuming one note per author per shift for simplicity in this flow,
+        // or we just attach to the most recent one, or create a new one.
+        // For this implementation, let's find the most recent note by this author for this shift,
+        // or create a new "Observation Note" if none exists.
+
+        let note = await prisma.progressNote.findFirst({
+            where: {
+                shiftId,
+                authorId: session.user.id
+            },
+            orderBy: { createdAt: 'desc' }
+        })
+
+        if (!note) {
+            note = await prisma.progressNote.create({
+                data: {
+                    organisationId: membership.organisationId,
+                    clientId: shift.clientId,
+                    shiftId,
+                    authorId: session.user.id,
+                    noteText: "Clinical Observation Recorded", // Default text
+                }
+            })
+        }
+
+        // Create observation
+        await prisma.observation.create({
+            data: {
+                progressNoteId: note.id,
+                type: observationData.moduleType,
+                data: observationData.data
+            }
+        })
+
+        revalidatePath(`/dashboard/shifts/${shiftId}`)
+        return { success: true }
+
+    } catch (error) {
+        console.error('Failed to save observation:', error)
+        return { error: 'Failed to save observation' }
+    }
+}
