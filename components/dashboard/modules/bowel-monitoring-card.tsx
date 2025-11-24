@@ -30,8 +30,18 @@ export function BowelMonitoringCard({ onSave, isSaving }: BowelMonitoringCardPro
     const [consistency, setConsistency] = useState<string>("")
     const [color, setColor] = useState<string>("")
     const [concerns, setConcerns] = useState<string>("")
+    // Default to current time in HH:MM format
+    const [time, setTime] = useState<string>(() => {
+        const now = new Date()
+        return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+    })
 
     const handleSave = () => {
+        // Construct date from today's date and selected time
+        const now = new Date()
+        const [hours, minutes] = time.split(':').map(Number)
+        const recordedAt = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes)
+
         onSave({
             moduleType: ModuleType.BOWEL_MONITORING,
             data: {
@@ -39,7 +49,7 @@ export function BowelMonitoringCard({ onSave, isSaving }: BowelMonitoringCardPro
                 consistency,
                 color,
                 concerns,
-                recordedAt: new Date().toISOString()
+                recordedAt: recordedAt.toISOString()
             }
         })
         // Reset form
@@ -47,9 +57,12 @@ export function BowelMonitoringCard({ onSave, isSaving }: BowelMonitoringCardPro
         setConsistency("")
         setColor("")
         setConcerns("")
+        // Reset time to current
+        const current = new Date()
+        setTime(`${String(current.getHours()).padStart(2, '0')}:${String(current.getMinutes()).padStart(2, '0')}`)
     }
 
-    const isValid = type && consistency && color
+    const isValid = type && consistency && color && time
 
     return (
         <Card className="border-purple-200 dark:border-purple-900">
@@ -60,6 +73,16 @@ export function BowelMonitoringCard({ onSave, isSaving }: BowelMonitoringCardPro
                 </div>
             </CardHeader>
             <CardContent className="space-y-4">
+                <div className="space-y-2">
+                    <Label>Time of Movement</Label>
+                    <input
+                        type="time"
+                        value={time}
+                        onChange={(e) => setTime(e.target.value)}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    />
+                </div>
+
                 <div className="space-y-2">
                     <Label>Bristol Stool Scale</Label>
                     <Select value={type} onValueChange={setType}>
