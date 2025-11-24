@@ -1,7 +1,7 @@
 "use client"
 import { useRouter } from "next/navigation"
 import { useSession } from "@/lib/auth-client"
-import { Navbar } from "@/components/dashboard/navbar"
+
 import { ProfileForm } from "@/components/dashboard/profile-form"
 import { PasswordForm } from "@/components/dashboard/password-form"
 import { useEffect } from "react";
@@ -25,7 +25,7 @@ export default function ProfilePage() {
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-            <Navbar user={user} />
+
             <main className="max-w-2xl mx-auto p-6 space-y-8">
                 <h1 className="text-2xl font-bold mb-4">Profile Settings</h1>
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
