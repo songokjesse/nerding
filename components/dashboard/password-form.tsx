@@ -32,6 +32,8 @@ export function PasswordForm() {
     })
 
     async function onSubmit(values: z.infer<typeof passwordSchema>) {
+        if (isLoading) return // Prevent double-click
+
         setIsLoading(true)
         setMessage(null)
         try {

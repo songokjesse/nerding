@@ -19,6 +19,8 @@ export function ReportDetail({ report }: { report: ReportWithRelations }) {
     const router = useRouter();
 
     const handleSave = async () => {
+        if (isSaving) return; // Prevent double-click
+
         setIsSaving(true);
         try {
             await updateReport(report.id, {

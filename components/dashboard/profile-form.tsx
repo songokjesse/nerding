@@ -36,6 +36,8 @@ export function ProfileForm({ user }: ProfileFormProps) {
     })
 
     async function onSubmit(values: z.infer<typeof profileSchema>) {
+        if (isLoading) return // Prevent double-click
+
         setIsLoading(true)
         setMessage(null)
         try {
