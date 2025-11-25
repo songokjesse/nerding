@@ -4,19 +4,19 @@ import prisma from '@/lib/prisma'
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: Promise<{ shiftId: string }> }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     // Authenticate request
     const { context, error } = await authenticateRequest(request)
     if (error) return error
 
     try {
-        const { shiftId } = await params
+        const { id } = await params
 
         // Verify shift access
         const shift = await prisma.shift.findFirst({
             where: {
-                id: shiftId,
+                id,
                 organisationId: context!.organisationId,
                 workerId: context!.userId
             }
@@ -28,7 +28,7 @@ export async function GET(
 
         // Get all progress notes for this shift
         const notes = await prisma.progressNote.findMany({
-            where: { shiftId },
+            where: { shiftId: id },
             include: {
                 author: {
                     select: {
@@ -60,14 +60,14 @@ export async function GET(
 
 export async function POST(
     request: NextRequest,
-    { params }: { params: Promise<{ shiftId: string }> }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     // Authenticate request
     const { context, error } = await authenticateRequest(request)
     if (error) return error
 
     try {
-        const { shiftId } = await params
+        const { id } = await params
         const body = await request.json()
         const { noteText, mood, incidentFlag, behavioursFlag, medicationFlag } = body
 
@@ -79,7 +79,7 @@ export async function POST(
         // Verify shift access
         const shift = await prisma.shift.findFirst({
             where: {
-                id: shiftId,
+                id,
                 organisationId: context!.organisationId,
                 workerId: context!.userId
             }
@@ -94,7 +94,7 @@ export async function POST(
             data: {
                 organisationId: context!.organisationId,
                 clientId: shift.clientId,
-                shiftId,
+                shiftId: id,
                 authorId: context!.userId,
                 noteText: noteText.trim(),
                 mood: mood || null,

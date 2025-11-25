@@ -5,19 +5,19 @@ import { ModuleType } from '@/generated/prisma/client/enums'
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: Promise<{ shiftId: string }> }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     // Authenticate request
     const { context, error } = await authenticateRequest(request)
     if (error) return error
 
     try {
-        const { shiftId } = await params
+        const { id } = await params
 
         // Verify shift access
         const shift = await prisma.shift.findFirst({
             where: {
-                id: shiftId,
+                id,
                 organisationId: context!.organisationId,
                 workerId: context!.userId
             }
@@ -31,7 +31,7 @@ export async function GET(
         const observations = await prisma.observation.findMany({
             where: {
                 progressNote: {
-                    shiftId
+                    shiftId: id
                 }
             },
             orderBy: { recordedAt: 'desc' }
@@ -54,14 +54,14 @@ export async function GET(
 
 export async function POST(
     request: NextRequest,
-    { params }: { params: Promise<{ shiftId: string }> }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     // Authenticate request
     const { context, error } = await authenticateRequest(request)
     if (error) return error
 
     try {
-        const { shiftId } = await params
+        const { id } = await params
         const body = await request.json()
         const { moduleType, data, recordedAt } = body
 
@@ -77,7 +77,7 @@ export async function POST(
         // Verify shift access
         const shift = await prisma.shift.findFirst({
             where: {
-                id: shiftId,
+                id,
                 organisationId: context!.organisationId,
                 workerId: context!.userId
             }
@@ -90,7 +90,7 @@ export async function POST(
         // Find or create progress note for this shift
         let note = await prisma.progressNote.findFirst({
             where: {
-                shiftId,
+                shiftId: id,
                 authorId: context!.userId
             },
             orderBy: { createdAt: 'desc' }
@@ -101,7 +101,7 @@ export async function POST(
                 data: {
                     organisationId: context!.organisationId,
                     clientId: shift.clientId,
-                    shiftId,
+                    shiftId: id,
                     authorId: context!.userId,
                     noteText: "Clinical Observation Recorded"
                 }
