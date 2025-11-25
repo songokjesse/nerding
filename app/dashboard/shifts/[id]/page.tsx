@@ -12,6 +12,7 @@ import { ObservationDisplay } from '@/components/dashboard/observation-display'
 const statusColors = {
     PLANNED: 'bg-blue-100 text-blue-700',
     COMPLETED: 'bg-green-100 text-green-700',
+    IN_PROGRESS: 'bg-purple-100 text-purple-700',
     CANCELLED: 'bg-red-100 text-red-700',
     NO_SHOW: 'bg-orange-100 text-orange-700'
 }
@@ -19,6 +20,7 @@ const statusColors = {
 const statusLabels = {
     PLANNED: 'Planned',
     COMPLETED: 'Completed',
+    IN_PROGRESS: 'In Progress',
     CANCELLED: 'Cancelled',
     NO_SHOW: 'No Show'
 }
@@ -101,6 +103,16 @@ export default async function ShiftDetailPage({ params }: { params: Promise<{ id
                                         {' - '}
                                         {endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </p>
+                                    {shift.clockInTime && (
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                            Clocked In: {new Date(shift.clockInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </p>
+                                    )}
+                                    {shift.clockOutTime && (
+                                        <p className="text-xs text-muted-foreground">
+                                            Clocked Out: {new Date(shift.clockOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
 

@@ -155,7 +155,77 @@ Update the status of a shift.
 
 ---
 
-### 5. List Observations
+### 5. Clock In
+
+Clock in to a shift.
+
+**Endpoint:** `POST /api/mobile/v1/shifts/:id/clock-in`
+
+**Request Body:**
+```json
+{
+  "location": {
+    "lat": -33.8688,
+    "lng": 151.2093,
+    "accuracy": 10
+  }
+}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "shift": {
+    "id": "shift123...",
+    "status": "IN_PROGRESS",
+    "clockInTime": "2025-01-15T08:55:00.000Z",
+    "clockInLocation": {
+      "lat": -33.8688,
+      "lng": 151.2093,
+      "accuracy": 10
+    }
+  }
+}
+```
+
+---
+
+### 6. Clock Out
+
+Clock out of a shift.
+
+**Endpoint:** `POST /api/mobile/v1/shifts/:id/clock-out`
+
+**Request Body:**
+```json
+{
+  "location": {
+    "lat": -33.8688,
+    "lng": 151.2093,
+    "accuracy": 10
+  }
+}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "shift": {
+    "id": "shift123...",
+    "status": "COMPLETED",
+    "clockOutTime": "2025-01-15T17:05:00.000Z",
+    "clockOutLocation": {
+      "lat": -33.8688,
+      "lng": 151.2093,
+      "accuracy": 10
+    }
+  }
+}
+```
+
+---
+
+### 7. List Observations
 
 Get all observations for a shift.
 

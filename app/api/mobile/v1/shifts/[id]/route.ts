@@ -79,6 +79,10 @@ export async function GET(
                 status: shift.status,
                 serviceType: shift.serviceType,
                 location: shift.location,
+                clockInTime: shift.clockInTime?.toISOString(),
+                clockOutTime: shift.clockOutTime?.toISOString(),
+                clockInLocation: shift.clockInLocation,
+                clockOutLocation: shift.clockOutLocation,
                 progressNotes: shift.progressNotes.map(note => ({
                     id: note.id,
                     noteText: note.noteText,

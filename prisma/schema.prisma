@@ -150,21 +150,25 @@ model Client {
 }
 
 model Shift {
-  id             String       @id @default(uuid())
-  organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
-  organisationId String
-  client         Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  clientId       String
-  worker         User         @relation("ShiftWorker", fields: [workerId], references: [id])
-  workerId       String
-  startTime      DateTime
-  endTime        DateTime
-  status         ShiftStatus  @default(PLANNED)
-  serviceType    String?
-  location       String?
-  createdAt      DateTime     @default(now())
-  createdBy      User?        @relation("ShiftCreatedBy", fields: [createdById], references: [id])
-  createdById    String?
+  id               String       @id @default(uuid())
+  organisation     Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  organisationId   String
+  client           Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId         String
+  worker           User         @relation("ShiftWorker", fields: [workerId], references: [id])
+  workerId         String
+  startTime        DateTime
+  endTime          DateTime
+  status           ShiftStatus  @default(PLANNED)
+  serviceType      String?
+  location         String?
+  clockInTime      DateTime?
+  clockOutTime     DateTime?
+  clockInLocation  Json?
+  clockOutLocation Json?
+  createdAt        DateTime     @default(now())
+  createdBy        User?        @relation("ShiftCreatedBy", fields: [createdById], references: [id])
+  createdById      String?
 
   progressNotes ProgressNote[]
 
@@ -173,6 +177,7 @@ model Shift {
 
 enum ShiftStatus {
   PLANNED
+  IN_PROGRESS
   COMPLETED
   CANCELLED
   NO_SHOW
