@@ -7,6 +7,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ModuleType } from '@/generated/prisma/client/enums'
 import { ShiftObservationSection } from '@/components/dashboard/shift-observation-section'
+import { ObservationDisplay } from '@/components/dashboard/observation-display'
 
 const statusColors = {
     PLANNED: 'bg-blue-100 text-blue-700',
@@ -38,6 +39,11 @@ export default async function ShiftDetailPage({ params }: { params: Promise<{ id
 
     const startDate = new Date(shift.startTime)
     const endDate = new Date(shift.endTime)
+
+    // Extract all observations from progress notes
+    const allObservations = shift.progressNotes
+        .flatMap(note => (note.observations || []) as any[])
+        .sort((a, b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime())
 
     return (
         <div className="p-6 space-y-6">
@@ -119,7 +125,22 @@ export default async function ShiftDetailPage({ params }: { params: Promise<{ id
                         </CardContent>
                     </Card>
 
-                    {/* Clinical Observations Section */}
+                    {/* Clinical Observations Section - Visible to all */}
+                    {allObservations.length > 0 && (
+                        <Card>
+                            <CardHeader>
+                                <div className="flex items-center gap-2">
+                                    <Activity className="h-5 w-5 text-muted-foreground" />
+                                    <CardTitle>Clinical Observations ({allObservations.length})</CardTitle>
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <ObservationDisplay observations={allObservations} />
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* Clinical Observations Section - Recording (Worker Only) */}
                     {isAssignedWorker && (
                         <ShiftObservationSection
                             shiftId={shift.id}
@@ -171,30 +192,6 @@ export default async function ShiftDetailPage({ params }: { params: Promise<{ id
                                                 </div>
                                             </div>
                                             <p className="text-sm whitespace-pre-wrap">{note.noteText}</p>
-
-                                            {/* Display Observations */}
-                                            {/* @ts-ignore - observations might not be typed yet in prisma client if not fully regenerated/picked up */}
-                                            {note.observations && note.observations.length > 0 && (
-                                                <div className="mt-3 space-y-2">
-                                                    {/* @ts-ignore */}
-                                                    {note.observations.map((obs) => (
-                                                        <div key={obs.id} className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-md border border-purple-100 dark:border-purple-900">
-                                                            <div className="flex items-center gap-2 mb-1">
-                                                                <Activity className="h-4 w-4 text-purple-600" />
-                                                                <span className="text-sm font-semibold text-purple-900 dark:text-purple-100">
-                                                                    {obs.type === ModuleType.BOWEL_MONITORING ? 'Bowel Observation' : obs.type}
-                                                                </span>
-                                                            </div>
-                                                            <div className="text-sm text-purple-800 dark:text-purple-200 grid grid-cols-2 gap-2">
-                                                                {obs.data.type && <p>Type: {obs.data.type}</p>}
-                                                                {obs.data.consistency && <p>Consistency: {obs.data.consistency}</p>}
-                                                                {obs.data.color && <p>Color: {obs.data.color}</p>}
-                                                                {obs.data.concerns && <p className="col-span-2">Concerns: {obs.data.concerns}</p>}
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
 
                                             {note.mood && (
                                                 <p className="text-sm text-muted-foreground mt-2">

@@ -12,7 +12,6 @@ import { Activity } from "lucide-react"
 
 interface BowelMonitoringCardProps {
     onSave: (data: any) => Promise<void>
-    isSaving: boolean
 }
 
 const bristolScale = [
@@ -25,7 +24,7 @@ const bristolScale = [
     { value: "7", label: "Type 7: Watery, no solid pieces", description: "Liquid" },
 ]
 
-export function BowelMonitoringCard({ onSave, isSaving }: BowelMonitoringCardProps) {
+export function BowelMonitoringCard({ onSave }: BowelMonitoringCardProps) {
     const [type, setType] = useState<string>("")
     const [consistency, setConsistency] = useState<string>("")
     const [color, setColor] = useState<string>("")
@@ -38,7 +37,7 @@ export function BowelMonitoringCard({ onSave, isSaving }: BowelMonitoringCardPro
     })
 
     const handleSave = async () => {
-        if (isSubmitting || isSaving) return // Prevent double-click
+        if (isSubmitting) return // Prevent double-click
 
         setIsSubmitting(true) // Immediate feedback
 
@@ -73,7 +72,7 @@ export function BowelMonitoringCard({ onSave, isSaving }: BowelMonitoringCardPro
     }
 
     const isValid = type && consistency && color && time
-    const isDisabled = !isValid || isSubmitting || isSaving
+    const isDisabled = !isValid || isSubmitting
 
     return (
         <Card className="border-purple-200 dark:border-purple-900">
@@ -162,7 +161,7 @@ export function BowelMonitoringCard({ onSave, isSaving }: BowelMonitoringCardPro
                     disabled={isDisabled}
                     className="w-full bg-purple-600 hover:bg-purple-700"
                 >
-                    {isSubmitting || isSaving ? "Saving..." : "Save Observation"}
+                    {isSubmitting ? "Saving..." : "Save Observation"}
                 </Button>
             </CardContent>
         </Card>

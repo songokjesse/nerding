@@ -11,10 +11,9 @@ import { Eye } from "lucide-react"
 
 interface BehaviourObservationCardProps {
     onSave: (data: any) => Promise<void>
-    isSaving: boolean
 }
 
-export function BehaviourObservationCard({ onSave, isSaving }: BehaviourObservationCardProps) {
+export function BehaviourObservationCard({ onSave }: BehaviourObservationCardProps) {
     const [behaviourType, setBehaviourType] = useState<string>("")
     const [severity, setSeverity] = useState<string>("")
     const [triggers, setTriggers] = useState<string>("")
@@ -29,7 +28,7 @@ export function BehaviourObservationCard({ onSave, isSaving }: BehaviourObservat
     })
 
     const handleSave = async () => {
-        if (isSubmitting || isSaving) return // Prevent double-click
+        if (isSubmitting) return // Prevent double-click
 
         setIsSubmitting(true) // Immediate feedback
 
@@ -68,7 +67,7 @@ export function BehaviourObservationCard({ onSave, isSaving }: BehaviourObservat
     }
 
     const isValid = behaviourType && severity && triggers && intervention && outcome && time
-    const isDisabled = !isValid || isSubmitting || isSaving
+    const isDisabled = !isValid || isSubmitting
 
     return (
         <Card className="border-orange-200 dark:border-orange-900">
@@ -174,7 +173,7 @@ export function BehaviourObservationCard({ onSave, isSaving }: BehaviourObservat
                     disabled={isDisabled}
                     className="w-full bg-orange-600 hover:bg-orange-700"
                 >
-                    {isSubmitting || isSaving ? "Saving..." : "Save Observation"}
+                    {isSubmitting ? "Saving..." : "Save Observation"}
                 </Button>
             </CardContent>
         </Card>

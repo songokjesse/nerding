@@ -1,6 +1,5 @@
 "use client"
 
-import { useState } from "react"
 import { BowelMonitoringCard } from "@/components/dashboard/modules/bowel-monitoring-card"
 import { FluidIntakeCard } from "@/components/dashboard/modules/fluid-intake-card"
 import { SeizureMonitoringCard } from "@/components/dashboard/modules/seizure-monitoring-card"
@@ -22,16 +21,12 @@ export function ShiftObservationSection({
     seizureMonitoringEnabled,
     behaviourObservationEnabled
 }: ShiftObservationSectionProps) {
-    const [isSaving, setIsSaving] = useState(false)
-
     const handleSaveObservation = async (data: any) => {
-        setIsSaving(true)
         try {
             await saveObservation(shiftId, data)
         } catch (error) {
             console.error("Failed to save observation", error)
-        } finally {
-            setIsSaving(false)
+            throw error // Re-throw so the card can handle it
         }
     }
 
@@ -42,16 +37,16 @@ export function ShiftObservationSection({
     return (
         <div className="space-y-6">
             {bowelMonitoringEnabled && (
-                <BowelMonitoringCard onSave={handleSaveObservation} isSaving={isSaving} />
+                <BowelMonitoringCard onSave={handleSaveObservation} />
             )}
             {fluidIntakeEnabled && (
-                <FluidIntakeCard onSave={handleSaveObservation} isSaving={isSaving} />
+                <FluidIntakeCard onSave={handleSaveObservation} />
             )}
             {seizureMonitoringEnabled && (
-                <SeizureMonitoringCard onSave={handleSaveObservation} isSaving={isSaving} />
+                <SeizureMonitoringCard onSave={handleSaveObservation} />
             )}
             {behaviourObservationEnabled && (
-                <BehaviourObservationCard onSave={handleSaveObservation} isSaving={isSaving} />
+                <BehaviourObservationCard onSave={handleSaveObservation} />
             )}
         </div>
     )

@@ -12,10 +12,9 @@ import { Droplets } from "lucide-react"
 
 interface FluidIntakeCardProps {
     onSave: (data: any) => Promise<void>
-    isSaving: boolean
 }
 
-export function FluidIntakeCard({ onSave, isSaving }: FluidIntakeCardProps) {
+export function FluidIntakeCard({ onSave }: FluidIntakeCardProps) {
     const [fluidType, setFluidType] = useState<string>("")
     const [amount, setAmount] = useState<string>("")
     const [notes, setNotes] = useState<string>("")
@@ -27,7 +26,7 @@ export function FluidIntakeCard({ onSave, isSaving }: FluidIntakeCardProps) {
     })
 
     const handleSave = async () => {
-        if (isSubmitting || isSaving) return // Prevent double-click
+        if (isSubmitting) return // Prevent double-click
 
         setIsSubmitting(true) // Immediate feedback
 
@@ -60,7 +59,7 @@ export function FluidIntakeCard({ onSave, isSaving }: FluidIntakeCardProps) {
     }
 
     const isValid = fluidType && amount && time && parseInt(amount) > 0
-    const isDisabled = !isValid || isSubmitting || isSaving
+    const isDisabled = !isValid || isSubmitting
 
     return (
         <Card className="border-blue-200 dark:border-blue-900">
@@ -129,7 +128,7 @@ export function FluidIntakeCard({ onSave, isSaving }: FluidIntakeCardProps) {
                     disabled={isDisabled}
                     className="w-full bg-blue-600 hover:bg-blue-700"
                 >
-                    {isSubmitting || isSaving ? "Saving..." : "Save Observation"}
+                    {isSubmitting ? "Saving..." : "Save Observation"}
                 </Button>
             </CardContent>
         </Card>

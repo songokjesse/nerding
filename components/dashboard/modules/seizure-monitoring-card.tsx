@@ -12,10 +12,9 @@ import { Brain } from "lucide-react"
 
 interface SeizureMonitoringCardProps {
     onSave: (data: any) => Promise<void>
-    isSaving: boolean
 }
 
-export function SeizureMonitoringCard({ onSave, isSaving }: SeizureMonitoringCardProps) {
+export function SeizureMonitoringCard({ onSave }: SeizureMonitoringCardProps) {
     const [seizureType, setSeizureType] = useState<string>("")
     const [duration, setDuration] = useState<string>("")
     const [severity, setSeverity] = useState<string>("")
@@ -29,7 +28,7 @@ export function SeizureMonitoringCard({ onSave, isSaving }: SeizureMonitoringCar
     })
 
     const handleSave = async () => {
-        if (isSubmitting || isSaving) return // Prevent double-click
+        if (isSubmitting) return // Prevent double-click
 
         setIsSubmitting(true) // Immediate feedback
 
@@ -66,7 +65,7 @@ export function SeizureMonitoringCard({ onSave, isSaving }: SeizureMonitoringCar
     }
 
     const isValid = seizureType && duration && severity && time && parseInt(duration) > 0
-    const isDisabled = !isValid || isSubmitting || isSaving
+    const isDisabled = !isValid || isSubmitting
 
     return (
         <Card className="border-red-200 dark:border-red-900">
@@ -158,7 +157,7 @@ export function SeizureMonitoringCard({ onSave, isSaving }: SeizureMonitoringCar
                     disabled={isDisabled}
                     className="w-full bg-red-600 hover:bg-red-700"
                 >
-                    {isSubmitting || isSaving ? "Saving..." : "Save Observation"}
+                    {isSubmitting ? "Saving..." : "Save Observation"}
                 </Button>
             </CardContent>
         </Card>

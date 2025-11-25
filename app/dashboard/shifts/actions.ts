@@ -122,6 +122,9 @@ export async function getShift(id: string) {
                     include: {
                         author: {
                             select: { name: true }
+                        },
+                        observations: {
+                            orderBy: { recordedAt: 'desc' }
                         }
                     },
                     orderBy: { createdAt: 'desc' }
