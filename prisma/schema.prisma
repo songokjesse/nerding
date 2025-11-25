@@ -246,7 +246,7 @@ model Observation {
   progressNoteId String
   type           ModuleType
   data           Json // Flexible structure for different observation types
-  recordedAt     DateTime     @default(now())
+  recordedAt     DateTime // Time entered in the form, not submission time
 
   @@map("observation")
 }

@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS "observation" (
     "progressNoteId" TEXT NOT NULL,
     "type" "ModuleType" NOT NULL,
     "data" JSONB NOT NULL,
-    "recordedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "recordedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "observation_pkey" PRIMARY KEY ("id")
 );

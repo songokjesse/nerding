@@ -471,12 +471,17 @@ export async function saveObservation(shiftId: string, observationData: { module
             })
         }
 
+        // Extract recordedAt from the data if provided, otherwise use current time
+        const { recordedAt, ...dataWithoutRecordedAt } = observationData.data as any
+        const observationTime = recordedAt ? new Date(recordedAt) : new Date()
+
         // Create observation
         await prisma.observation.create({
             data: {
                 progressNoteId: note.id,
                 type: observationData.moduleType,
-                data: observationData.data
+                data: dataWithoutRecordedAt, // Store data without recordedAt since it's a separate field
+                recordedAt: observationTime
             }
         })
 
