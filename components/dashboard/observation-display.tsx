@@ -51,6 +51,15 @@ const observationConfig = {
         borderClass: "border-orange-200 dark:border-orange-800",
         iconClass: "text-orange-600 dark:text-orange-400",
         textClass: "text-orange-900 dark:text-orange-100"
+    },
+    [ModuleType.BGL_MONITORING]: {
+        icon: Activity,
+        color: "green",
+        label: "BGL Monitoring",
+        bgClass: "bg-green-50 dark:bg-green-900/20",
+        borderClass: "border-green-200 dark:border-green-800",
+        iconClass: "text-green-600 dark:text-green-400",
+        textClass: "text-green-900 dark:text-green-100"
     }
 }
 
@@ -94,6 +103,15 @@ function formatObservationData(type: ModuleType, data: any) {
                     {data.triggers && <div className="col-span-2"><span className="font-medium">Triggers:</span> {data.triggers}</div>}
                     {data.intervention && <div className="col-span-2"><span className="font-medium">Intervention:</span> {data.intervention}</div>}
                     {data.outcome && <div className="col-span-2"><span className="font-medium">Outcome:</span> {data.outcome}</div>}
+                    {data.notes && <div className="col-span-2"><span className="font-medium">Notes:</span> {data.notes}</div>}
+                </div>
+            )
+
+        case ModuleType.BGL_MONITORING:
+            return (
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                    {data.reading && <div><span className="font-medium">Reading:</span> {data.reading} mmol/L</div>}
+                    {data.mealContext && <div><span className="font-medium">Context:</span> {data.mealContext}</div>}
                     {data.notes && <div className="col-span-2"><span className="font-medium">Notes:</span> {data.notes}</div>}
                 </div>
             )

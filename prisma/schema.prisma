@@ -238,6 +238,7 @@ enum ModuleType {
   FLUID_INTAKE
   BEHAVIOUR_OBSERVATION
   SEIZURE_MONITORING
+  BGL_MONITORING
 }
 
 model Observation {

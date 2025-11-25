@@ -4,6 +4,7 @@ import { BowelMonitoringCard } from "@/components/dashboard/modules/bowel-monito
 import { FluidIntakeCard } from "@/components/dashboard/modules/fluid-intake-card"
 import { SeizureMonitoringCard } from "@/components/dashboard/modules/seizure-monitoring-card"
 import { BehaviourObservationCard } from "@/components/dashboard/modules/behaviour-observation-card"
+import { BGLMonitoringCard } from "@/components/dashboard/modules/bgl-monitoring-card"
 import { saveObservation } from "@/app/dashboard/shifts/actions"
 
 interface ShiftObservationSectionProps {
@@ -12,6 +13,7 @@ interface ShiftObservationSectionProps {
     fluidIntakeEnabled: boolean
     seizureMonitoringEnabled: boolean
     behaviourObservationEnabled: boolean
+    bglMonitoringEnabled: boolean
 }
 
 export function ShiftObservationSection({
@@ -19,7 +21,8 @@ export function ShiftObservationSection({
     bowelMonitoringEnabled,
     fluidIntakeEnabled,
     seizureMonitoringEnabled,
-    behaviourObservationEnabled
+    behaviourObservationEnabled,
+    bglMonitoringEnabled
 }: ShiftObservationSectionProps) {
     const handleSaveObservation = async (data: any) => {
         try {
@@ -31,7 +34,7 @@ export function ShiftObservationSection({
     }
 
     // If no modules are enabled, don't render anything
-    const hasEnabledModules = bowelMonitoringEnabled || fluidIntakeEnabled || seizureMonitoringEnabled || behaviourObservationEnabled
+    const hasEnabledModules = bowelMonitoringEnabled || fluidIntakeEnabled || seizureMonitoringEnabled || behaviourObservationEnabled || bglMonitoringEnabled
     if (!hasEnabledModules) return null
 
     return (
@@ -47,6 +50,9 @@ export function ShiftObservationSection({
             )}
             {behaviourObservationEnabled && (
                 <BehaviourObservationCard onSave={handleSaveObservation} />
+            )}
+            {bglMonitoringEnabled && (
+                <BGLMonitoringCard onSave={handleSaveObservation} />
             )}
         </div>
     )

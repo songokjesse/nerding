@@ -37,6 +37,11 @@ const moduleDetails = {
         label: "Seizure Monitoring",
         description: "Log seizure activity and duration.",
         icon: Brain
+    },
+    [ModuleType.BGL_MONITORING]: {
+        label: "BGL Monitoring",
+        description: "Track blood glucose levels and meal context.",
+        icon: Activity
     }
 }
 

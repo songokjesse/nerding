@@ -36,6 +36,7 @@ export default async function ShiftDetailPage({ params }: { params: Promise<{ id
     const fluidIntakeEnabled = modules?.some(m => m.moduleType === ModuleType.FLUID_INTAKE && m.isEnabled)
     const seizureMonitoringEnabled = modules?.some(m => m.moduleType === ModuleType.SEIZURE_MONITORING && m.isEnabled)
     const behaviourObservationEnabled = modules?.some(m => m.moduleType === ModuleType.BEHAVIOUR_OBSERVATION && m.isEnabled)
+    const bglMonitoringEnabled = modules?.some(m => m.moduleType === ModuleType.BGL_MONITORING && m.isEnabled)
 
     const startDate = new Date(shift.startTime)
     const endDate = new Date(shift.endTime)
@@ -148,6 +149,7 @@ export default async function ShiftDetailPage({ params }: { params: Promise<{ id
                             fluidIntakeEnabled={!!fluidIntakeEnabled}
                             seizureMonitoringEnabled={!!seizureMonitoringEnabled}
                             behaviourObservationEnabled={!!behaviourObservationEnabled}
+                            bglMonitoringEnabled={!!bglMonitoringEnabled}
                         />
                     )}
 
