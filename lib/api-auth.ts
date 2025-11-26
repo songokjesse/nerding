@@ -13,27 +13,10 @@ export interface AuthContext {
  */
 export async function authenticateRequest(request: NextRequest): Promise<{ context: AuthContext | null, error: NextResponse | null }> {
     try {
-        // Get authorization header
-        const authHeader = request.headers.get('authorization')
-
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return {
-                context: null,
-                error: NextResponse.json(
-                    { error: 'Missing or invalid authorization header', code: 'UNAUTHORIZED' },
-                    { status: 401 }
-                )
-            }
-        }
-
-        // Extract token
-        const token = authHeader.substring(7)
-
         // Verify session using Better Auth
+        // This will automatically check for session cookies or Bearer tokens in the request headers
         const session = await auth.api.getSession({
-            headers: {
-                authorization: `Bearer ${token}`
-            }
+            headers: request.headers
         })
 
         if (!session?.user) {
