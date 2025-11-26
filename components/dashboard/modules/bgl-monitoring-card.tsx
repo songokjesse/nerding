@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { ModuleType } from "@/generated/prisma/client/enums"
@@ -99,42 +99,44 @@ export function BGLMonitoringCard({ onSave }: BGLMonitoringCardProps) {
                     />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Label>BGL Reading (mmol/L)</Label>
-                        <Input
-                            type="number"
-                            step="0.1"
-                            min="0"
-                            placeholder="e.g., 5.5"
-                            value={reading}
-                            onChange={(e) => setReading(e.target.value)}
-                        />
-                        {readingStatus && (
-                            <p className={`text-xs ${readingStatus === 'low' ? 'text-orange-600' :
-                                    readingStatus === 'high' ? 'text-red-600' :
-                                        'text-green-600'
-                                }`}>
-                                {readingStatus === 'low' ? '⚠️ Low' :
-                                    readingStatus === 'high' ? '⚠️ High' :
-                                        '✓ Normal range'}
-                            </p>
-                        )}
-                    </div>
+                <div className="space-y-2">
+                    <Label>BGL Reading (mmol/L)</Label>
+                    <Input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        placeholder="e.g., 5.5"
+                        value={reading}
+                        onChange={(e) => setReading(e.target.value)}
+                    />
+                    {readingStatus && (
+                        <p className={`text-xs ${readingStatus === 'low' ? 'text-orange-600' :
+                            readingStatus === 'high' ? 'text-red-600' :
+                                'text-green-600'
+                            }`}>
+                            {readingStatus === 'low' ? '⚠️ Low' :
+                                readingStatus === 'high' ? '⚠️ High' :
+                                    '✓ Normal range'}
+                        </p>
+                    )}
+                </div>
 
-                    <div className="space-y-2">
-                        <Label>Meal Context</Label>
-                        <Select value={mealContext} onValueChange={setMealContext}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="Fasting">Fasting</SelectItem>
-                                <SelectItem value="Before Meal">Before Meal</SelectItem>
-                                <SelectItem value="After Meal">After Meal (2hrs)</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
+                <div className="space-y-2">
+                    <Label>Meal Context</Label>
+                    <RadioGroup value={mealContext} onValueChange={setMealContext} className="grid grid-cols-1 gap-2">
+                        <div className="flex items-center space-x-2 rounded-md border p-2 hover:bg-accent cursor-pointer" onClick={() => setMealContext("Fasting")}>
+                            <RadioGroupItem value="Fasting" id="r-fasting" />
+                            <Label htmlFor="r-fasting" className="cursor-pointer">Fasting</Label>
+                        </div>
+                        <div className="flex items-center space-x-2 rounded-md border p-2 hover:bg-accent cursor-pointer" onClick={() => setMealContext("Before Meal")}>
+                            <RadioGroupItem value="Before Meal" id="r-before" />
+                            <Label htmlFor="r-before" className="cursor-pointer">Before Meal</Label>
+                        </div>
+                        <div className="flex items-center space-x-2 rounded-md border p-2 hover:bg-accent cursor-pointer" onClick={() => setMealContext("After Meal")}>
+                            <RadioGroupItem value="After Meal" id="r-after" />
+                            <Label htmlFor="r-after" className="cursor-pointer">After Meal (2hrs)</Label>
+                        </div>
+                    </RadioGroup>
                 </div>
 
                 <div className="space-y-2">

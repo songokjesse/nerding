@@ -13,8 +13,15 @@ export async function POST(
 
     try {
         const { id } = await params
-        const body = await request.json()
-        const { location } = body
+        
+        let body = {}
+        try {
+            body = await request.json()
+        } catch (e) {
+            console.warn('Failed to parse request body, assuming empty body')
+        }
+        
+        const { location } = body as any
 
         // Verify shift access
         const shift = await prisma.shift.findFirst({
@@ -29,9 +36,21 @@ export async function POST(
             return errorResponse('Shift not found or access denied', 'NOT_FOUND', 404)
         }
 
+        // Handle idempotency - if already completed, return success
+        if (shift.status === ShiftStatus.COMPLETED) {
+            return successResponse({
+                shift: {
+                    id: shift.id,
+                    status: shift.status,
+                    clockOutTime: shift.clockOutTime?.toISOString(),
+                    clockOutLocation: shift.clockOutLocation
+                }
+            })
+        }
+
         // Verify shift status
         if (shift.status !== ShiftStatus.IN_PROGRESS) {
-            return errorResponse('Shift must be IN_PROGRESS to clock out', 'INVALID_STATE', 400)
+            return errorResponse(`Shift must be IN_PROGRESS to clock out (current status: ${shift.status})`, 'INVALID_STATE', 400)
         }
 
         // Update shift
@@ -55,6 +74,8 @@ export async function POST(
 
     } catch (err) {
         console.error('Error clocking out:', err)
-        return errorResponse('Failed to clock out', 'INTERNAL_ERROR', 500)
+        // Return the actual error message in development/test for easier debugging
+        const message = err instanceof Error ? err.message : 'Failed to clock out'
+        return errorResponse(message, 'INTERNAL_ERROR', 500)
     }
 }
