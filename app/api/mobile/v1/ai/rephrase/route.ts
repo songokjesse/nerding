@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
         }
 
         const genAI = new GoogleGenerativeAI(apiKey)
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-002' })
 
         const prompt = `Rephrase the following text to be more professional, objective, and clinically appropriate for a disability support progress note. Keep the meaning exactly the same, but improve the tone and grammar. Do not add any introductory or concluding text, just return the rephrased text.
 
