@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { authenticateRequest, successResponse, errorResponse } from '@/lib/api-auth'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 
 export async function POST(request: NextRequest) {
     // Authenticate request
@@ -20,9 +21,22 @@ export async function POST(request: NextRequest) {
             return errorResponse('Text is required', 'INVALID_REQUEST', 400)
         }
 
-        // TODO: Integrate with actual AI service (e.g., OpenAI, Anthropic, Google Vertex AI)
-        // For now, we return a mock response to unblock frontend development.
-        const rephrasedText = `[AI Rephrased]: ${text}`
+        const apiKey = process.env.GEMINI_API_KEY
+        if (!apiKey) {
+            console.error('GEMINI_API_KEY is not set')
+            return errorResponse('AI service not configured', 'CONFIG_ERROR', 503)
+        }
+
+        const genAI = new GoogleGenerativeAI(apiKey)
+        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+
+        const prompt = `Rephrase the following text to be more professional, objective, and clinically appropriate for a disability support progress note. Keep the meaning exactly the same, but improve the tone and grammar. Do not add any introductory or concluding text, just return the rephrased text.
+
+Original text: "${text}"`
+
+        const result = await model.generateContent(prompt)
+        const response = await result.response
+        const rephrasedText = response.text().trim()
 
         return successResponse({
             rephrasedText

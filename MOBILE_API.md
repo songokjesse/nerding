@@ -429,7 +429,29 @@ Create a new progress note for a shift.
 
 ---
 
-### 9. Get Client Details
+### 9. AI Rephrase Note
+
+Rephrase a progress note using AI to be more professional and clinical.
+
+**Endpoint:** `POST /api/mobile/v1/ai/rephrase`
+
+**Request Body:**
+```json
+{
+  "text": "Client was good today. He ate all his food."
+}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "rephrasedText": "The client demonstrated a positive demeanor throughout the shift. He consumed his entire meal without assistance."
+}
+```
+
+---
+
+### 10. Get Client Details
 
 Get detailed information about a client (only for clients with assigned shifts).
 
