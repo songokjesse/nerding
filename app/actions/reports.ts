@@ -143,25 +143,15 @@ export async function generateAIReport(data: {
     throw new Error("Unauthorized");
   }
 
-  // Call the AI generation API endpoint
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/mobile/v1/reports/generate`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Cookie': (await headers()).get('cookie') || ''
-    },
-    body: JSON.stringify({
-      clientId: data.clientId,
-      organisationId: data.organisationId,
-      reportMonth: data.reportMonth.toISOString()
-    })
+  // Import the shared generation logic
+  const { generateAIReportLogic } = await import("@/lib/generate-ai-report");
+
+  // Call the shared logic directly (no HTTP fetch needed)
+  const result = await generateAIReportLogic({
+    clientId: data.clientId,
+    organisationId: data.organisationId,
+    reportMonth: data.reportMonth
   });
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error || 'Failed to generate AI report');
-  }
-
-  const result = await response.json();
   return result;
 }
