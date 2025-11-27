@@ -38,7 +38,7 @@ export default async function NewReportPage() {
     });
 
     return (
-        <div className="flex flex-1 flex-col gap-4 p-4 md:p-6 lg:p-8">
+        <div className="flex flex-1 flex-col gap-4 p-4 md:p-6 lg:p-8 max-w-7xl mx-auto w-full">
             <div className="flex items-center gap-2">
                 <Button variant="ghost" size="icon" asChild>
                     <Link href="/dashboard/reports">
@@ -47,9 +47,7 @@ export default async function NewReportPage() {
                 </Button>
                 <h1 className="text-lg font-semibold">Create New Report</h1>
             </div>
-            <div className="w-full max-w-4xl">
-                <CreateReportForm clients={clients} organisationId={organisationId} />
-            </div>
+            <CreateReportForm clients={clients} organisationId={organisationId} />
         </div>
     );
 }

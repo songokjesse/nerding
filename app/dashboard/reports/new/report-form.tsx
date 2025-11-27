@@ -101,32 +101,34 @@ export function CreateReportForm({
                 </AlertDescription>
             </Alert>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                    <Label htmlFor="client">Client</Label>
-                    <Select value={clientId} onValueChange={setClientId}>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select a client" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {clients.map((client) => (
-                                <SelectItem key={client.id} value={client.id}>
-                                    {client.name}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
+            <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid gap-6 md:grid-cols-2">
+                    <div className="space-y-2">
+                        <Label htmlFor="client">Client</Label>
+                        <Select value={clientId} onValueChange={setClientId}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a client" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {clients.map((client) => (
+                                    <SelectItem key={client.id} value={client.id}>
+                                        {client.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
 
-                <div className="space-y-2">
-                    <Label htmlFor="month">Month</Label>
-                    <Input
-                        id="month"
-                        type="month"
-                        value={month}
-                        onChange={(e) => setMonth(e.target.value)}
-                        required
-                    />
+                    <div className="space-y-2">
+                        <Label htmlFor="month">Month</Label>
+                        <Input
+                            id="month"
+                            type="month"
+                            value={month}
+                            onChange={(e) => setMonth(e.target.value)}
+                            required
+                        />
+                    </div>
                 </div>
 
                 {/* AI Generation Section */}
