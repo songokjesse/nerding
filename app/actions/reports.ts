@@ -129,3 +129,39 @@ export async function updateReport(
   revalidatePath(`/dashboard/reports/${id}`);
   return report;
 }
+
+export async function generateAIReport(data: {
+  clientId: string;
+  organisationId: string;
+  reportMonth: Date;
+}) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session) {
+    throw new Error("Unauthorized");
+  }
+
+  // Call the AI generation API endpoint
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/mobile/v1/reports/generate`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Cookie': (await headers()).get('cookie') || ''
+    },
+    body: JSON.stringify({
+      clientId: data.clientId,
+      organisationId: data.organisationId,
+      reportMonth: data.reportMonth.toISOString()
+    })
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Failed to generate AI report');
+  }
+
+  const result = await response.json();
+  return result;
+}
