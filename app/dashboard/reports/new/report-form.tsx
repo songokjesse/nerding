@@ -2,30 +2,59 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { createReport, generateAIReport } from "@/app/actions/reports";
-import { Loader2, Sparkles, Shield, BarChart3, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+    Loader2,
+    Sparkles,
+    Shield,
+    BarChart3,
+    Check,
+    ChevronsUpDown,
+} from "lucide-react";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+
+interface Client {
+    id: string;
+    name: string;
+}
+
+interface CreateReportFormProps {
+    clients: Client[];
+    organisationId: string;
+}
 
 export function CreateReportForm({
     clients,
     organisationId,
-}: {
-    clients: any[];
-    organisationId: string;
-}) {
+}: CreateReportFormProps) {
+    const router = useRouter();
     const [clientId, setClientId] = useState("");
+    const [open, setOpen] = useState(false);
     const [month, setMonth] = useState("");
     const [summary, setSummary] = useState("");
     const [metrics, setMetrics] = useState<any>(null);
@@ -33,7 +62,6 @@ export function CreateReportForm({
     const [isGenerating, setIsGenerating] = useState(false);
     const [generationError, setGenerationError] = useState<string | null>(null);
     const [isAIGenerated, setIsAIGenerated] = useState(false);
-    const router = useRouter();
 
     const handleGenerateAI = async () => {
         if (!clientId || !month) {
@@ -103,20 +131,51 @@ export function CreateReportForm({
 
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid gap-6 md:grid-cols-2">
-                    <div className="space-y-2">
+                    <div className="space-y-2 flex flex-col">
                         <Label htmlFor="client">Client</Label>
-                        <Select value={clientId} onValueChange={setClientId}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select a client" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {clients.map((client) => (
-                                    <SelectItem key={client.id} value={client.id}>
-                                        {client.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                        <Popover open={open} onOpenChange={setOpen}>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    aria-expanded={open}
+                                    className="w-full justify-between"
+                                >
+                                    {clientId
+                                        ? clients.find((client) => client.id === clientId)?.name
+                                        : "Select a client..."}
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                <Command>
+                                    <CommandInput placeholder="Search client..." />
+                                    <CommandList>
+                                        <CommandEmpty>No client found.</CommandEmpty>
+                                        <CommandGroup>
+                                            {clients.map((client) => (
+                                                <CommandItem
+                                                    key={client.id}
+                                                    value={client.name}
+                                                    onSelect={() => {
+                                                        setClientId(client.id === clientId ? "" : client.id)
+                                                        setOpen(false)
+                                                    }}
+                                                >
+                                                    <Check
+                                                        className={cn(
+                                                            "mr-2 h-4 w-4",
+                                                            clientId === client.id ? "opacity-100" : "opacity-0"
+                                                        )}
+                                                    />
+                                                    {client.name}
+                                                </CommandItem>
+                                            ))}
+                                        </CommandGroup>
+                                    </CommandList>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
                     </div>
 
                     <div className="space-y-2">
