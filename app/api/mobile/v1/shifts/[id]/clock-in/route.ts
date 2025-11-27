@@ -48,7 +48,7 @@ export async function POST(
             shift: {
                 id: updatedShift.id,
                 status: updatedShift.status,
-                clockInTime: updatedShift.clockInTime?.toISOString(),
+                clockInTime: updatedShift.clockInTime?.toLocaleString('sv-SE').replace(' ', 'T'),
                 clockInLocation: updatedShift.clockInLocation
             }
         })

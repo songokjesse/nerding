@@ -50,8 +50,8 @@ export async function PATCH(
             shift: {
                 id: updatedShift.id,
                 status: updatedShift.status,
-                startTime: updatedShift.startTime.toISOString(),
-                endTime: updatedShift.endTime.toISOString()
+                startTime: updatedShift.startTime.toLocaleString('sv-SE').replace(' ', 'T'),
+                endTime: updatedShift.endTime.toLocaleString('sv-SE').replace(' ', 'T')
             }
         })
 

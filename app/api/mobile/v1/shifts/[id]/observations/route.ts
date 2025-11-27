@@ -42,7 +42,7 @@ export async function GET(
                 id: obs.id,
                 type: obs.type,
                 data: obs.data,
-                recordedAt: obs.recordedAt.toISOString()
+                recordedAt: obs.recordedAt.toLocaleString('sv-SE').replace(' ', 'T')
             }))
         })
 
@@ -127,7 +127,7 @@ export async function POST(
                 id: observation.id,
                 type: observation.type,
                 data: observation.data,
-                recordedAt: observation.recordedAt.toISOString()
+                recordedAt: observation.recordedAt.toLocaleString('sv-SE').replace(' ', 'T')
             }
         }, 201)
 

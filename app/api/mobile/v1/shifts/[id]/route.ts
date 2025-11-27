@@ -71,16 +71,16 @@ export async function GET(
                 id: shift.id,
                 client: {
                     ...shift.client,
-                    dateOfBirth: shift.client.dateOfBirth?.toISOString(),
+                    dateOfBirth: shift.client.dateOfBirth?.toLocaleString('sv-SE').replace(' ', 'T'),
                     enabledModules: modules.map(m => m.moduleType)
                 },
-                startTime: shift.startTime.toISOString(),
-                endTime: shift.endTime.toISOString(),
+                startTime: shift.startTime.toLocaleString('sv-SE').replace(' ', 'T'),
+                endTime: shift.endTime.toLocaleString('sv-SE').replace(' ', 'T'),
                 status: shift.status,
                 serviceType: shift.serviceType,
                 location: shift.location,
-                clockInTime: shift.clockInTime?.toISOString(),
-                clockOutTime: shift.clockOutTime?.toISOString(),
+                clockInTime: shift.clockInTime?.toLocaleString('sv-SE').replace(' ', 'T'),
+                clockOutTime: shift.clockOutTime?.toLocaleString('sv-SE').replace(' ', 'T'),
                 clockInLocation: shift.clockInLocation,
                 clockOutLocation: shift.clockOutLocation,
                 progressNotes: shift.progressNotes.map(note => ({
@@ -90,14 +90,14 @@ export async function GET(
                     incidentFlag: note.incidentFlag,
                     behavioursFlag: note.behavioursFlag,
                     medicationFlag: note.medicationFlag,
-                    createdAt: note.createdAt.toISOString(),
+                    createdAt: note.createdAt.toLocaleString('sv-SE').replace(' ', 'T'),
                     author: note.author
                 })),
                 observations: allObservations.map(obs => ({
                     id: obs.id,
                     type: obs.type,
                     data: obs.data,
-                    recordedAt: obs.recordedAt.toISOString()
+                    recordedAt: obs.recordedAt.toLocaleString('sv-SE').replace(' ', 'T')
                 }))
             }
         })

@@ -13,14 +13,14 @@ export async function POST(
 
     try {
         const { id } = await params
-        
+
         let body = {}
         try {
             body = await request.json()
         } catch (e) {
             console.warn('Failed to parse request body, assuming empty body')
         }
-        
+
         const { location } = body as any
 
         // Verify shift access
@@ -67,7 +67,7 @@ export async function POST(
             shift: {
                 id: updatedShift.id,
                 status: updatedShift.status,
-                clockOutTime: updatedShift.clockOutTime?.toISOString(),
+                clockOutTime: updatedShift.clockOutTime?.toLocaleString('sv-SE').replace(' ', 'T'),
                 clockOutLocation: updatedShift.clockOutLocation
             }
         })

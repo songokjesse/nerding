@@ -59,7 +59,7 @@ export async function GET(
                 id: client.id,
                 name: client.name,
                 ndisNumber: client.ndisNumber,
-                dateOfBirth: client.dateOfBirth?.toISOString(),
+                dateOfBirth: client.dateOfBirth?.toLocaleString('sv-SE').replace(' ', 'T'),
                 notes: client.notes,
                 enabledModules: modules
             }

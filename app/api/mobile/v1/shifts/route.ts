@@ -70,8 +70,8 @@ export async function GET(request: NextRequest) {
                 return {
                     id: shift.id,
                     client: shift.client,
-                    startTime: shift.startTime.toISOString(),
-                    endTime: shift.endTime.toISOString(),
+                    startTime: shift.startTime.toLocaleString('sv-SE').replace(' ', 'T'),
+                    endTime: shift.endTime.toLocaleString('sv-SE').replace(' ', 'T'),
                     status: shift.status,
                     serviceType: shift.serviceType,
                     location: shift.location,
