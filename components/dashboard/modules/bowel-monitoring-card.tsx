@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { ModuleType } from "@/generated/prisma/client/enums"
 import { Activity } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
 
 interface BowelMonitoringCardProps {
     onSave: (data: any) => Promise<void>
@@ -27,7 +28,9 @@ const bristolScale = [
 export function BowelMonitoringCard({ onSave }: BowelMonitoringCardProps) {
     const [type, setType] = useState<string>("")
     const [consistency, setConsistency] = useState<string>("")
+    const [size, setSize] = useState<string>("")
     const [color, setColor] = useState<string>("")
+    const [incontinence, setIncontinence] = useState<boolean>(false)
     const [concerns, setConcerns] = useState<string>("")
     const [isSubmitting, setIsSubmitting] = useState(false)
     // Default to current time in HH:MM format
@@ -52,7 +55,9 @@ export function BowelMonitoringCard({ onSave }: BowelMonitoringCardProps) {
                 data: {
                     type,
                     consistency,
+                    size,
                     color,
+                    incontinence,
                     concerns,
                     recordedAt: recordedAt.toISOString()
                 }
@@ -61,7 +66,9 @@ export function BowelMonitoringCard({ onSave }: BowelMonitoringCardProps) {
             // Reset form only on success
             setType("")
             setConsistency("")
+            setSize("")
             setColor("")
+            setIncontinence(false)
             setConcerns("")
             // Reset time to current
             const current = new Date()
@@ -71,7 +78,7 @@ export function BowelMonitoringCard({ onSave }: BowelMonitoringCardProps) {
         }
     }
 
-    const isValid = type && consistency && color && time
+    const isValid = type && consistency && size && color && time
     const isDisabled = !isValid || isSubmitting
 
     return (
@@ -142,6 +149,36 @@ export function BowelMonitoringCard({ onSave }: BowelMonitoringCardProps) {
                                 <SelectItem value="red">Red/Blood</SelectItem>
                             </SelectContent>
                         </Select>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label>Size</Label>
+                        <Select value={size} onValueChange={setSize}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="small">Small</SelectItem>
+                                <SelectItem value="medium">Medium</SelectItem>
+                                <SelectItem value="large">Large</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="flex flex-col space-y-3 pt-1">
+                        <Label>Incontinence Issue?</Label>
+                        <div className="flex items-center space-x-2">
+                            <Switch
+                                id="incontinence-mode"
+                                checked={incontinence}
+                                onCheckedChange={setIncontinence}
+                            />
+                            <Label htmlFor="incontinence-mode" className="font-normal cursor-pointer">
+                                {incontinence ? "Yes" : "No"}
+                            </Label>
+                        </div>
                     </div>
                 </div>
 
