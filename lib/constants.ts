@@ -19,6 +19,7 @@ export const NDIS_SERVICE_TYPES = [
     'Respite Care',
     'Meal Preparation',
     'Assistance with Daily Living',
+    'SIL House Implementation',
 ] as const
 
 export type ServiceType = typeof NDIS_SERVICE_TYPES[number]
@@ -41,4 +42,5 @@ export const SERVICE_TYPE_CONFIG: Record<string, { icon: string; color: string }
     'Respite Care': { icon: '☕', color: '#a855f7' },
     'Meal Preparation': { icon: '🍽️', color: '#06b6d4' },
     'Assistance with Daily Living': { icon: '🛟', color: '#64748b' },
+    'SIL House Implementation': { icon: '🏡', color: '#4c0519' },
 }
