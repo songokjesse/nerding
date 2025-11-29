@@ -50,8 +50,8 @@ export async function GET(
             return errorResponse('Shift not found or access denied', 'NOT_FOUND', 404)
         }
 
-        // Get enabled modules for the client
-        const modules = await prisma.clientModule.findMany({
+        // Get enabled modules for the client (if shift has a client)
+        const modules = shift.clientId ? await prisma.clientModule.findMany({
             where: {
                 clientId: shift.clientId,
                 isEnabled: true
@@ -59,7 +59,7 @@ export async function GET(
             select: {
                 moduleType: true
             }
-        })
+        }) : []
 
         // Extract all observations from progress notes
         const allObservations = shift.progressNotes
@@ -69,11 +69,11 @@ export async function GET(
         return successResponse({
             shift: {
                 id: shift.id,
-                client: {
+                client: shift.client ? {
                     ...shift.client,
                     dateOfBirth: shift.client.dateOfBirth?.toLocaleString('sv-SE').replace(' ', 'T'),
                     enabledModules: modules.map(m => m.moduleType)
-                },
+                } : null,
                 startTime: shift.startTime.toLocaleString('sv-SE').replace(' ', 'T'),
                 endTime: shift.endTime.toLocaleString('sv-SE').replace(' ', 'T'),
                 status: shift.status,

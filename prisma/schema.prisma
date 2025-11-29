@@ -33,6 +33,7 @@ model User {
   authoredNotes           ProgressNote[]       @relation("NoteAuthor")
   createdReports          MonthlyReport[]      @relation("ReportCreatedBy")
   reviewedReports         MonthlyReport[]      @relation("ReportReviewedBy")
+  completedAppointments   Appointment[]        @relation("AppointmentCompletedBy")
 
   @@unique([email])
   @@map("user")
@@ -100,11 +101,14 @@ model Organisation {
   plan         String   @default("free")
   createdAt    DateTime @default(now())
 
-  members        OrganisationMember[]
-  clients        Client[]
-  shifts         Shift[]
-  progressNotes  ProgressNote[]
+  members       OrganisationMember[]
+  clients       Client[]
+  shifts        Shift[]
+  progressNotes ProgressNote[]
+
   monthlyReports MonthlyReport[]
+  sites          Site[]
+  appointments   Appointment[]
 
   @@map("organisation")
 }
@@ -144,33 +148,41 @@ model Client {
   shifts         Shift[]
   progressNotes  ProgressNote[]
   monthlyReports MonthlyReport[]
+
   enabledModules ClientModule[]
+  site           Site?          @relation(fields: [siteId], references: [id])
+  siteId         String?
+  appointments   Appointment[]
 
   @@map("client")
 }
 
 model Shift {
-  id               String       @id @default(uuid())
-  organisation     Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
-  organisationId   String
-  client           Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  clientId         String
-  worker           User         @relation("ShiftWorker", fields: [workerId], references: [id])
+  id             String       @id @default(uuid())
+  organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  organisationId String
+
+  client           Client?     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId         String?
+  site             Site?       @relation(fields: [siteId], references: [id])
+  siteId           String?
+  worker           User        @relation("ShiftWorker", fields: [workerId], references: [id])
   workerId         String
   startTime        DateTime
   endTime          DateTime
-  status           ShiftStatus  @default(PLANNED)
+  status           ShiftStatus @default(PLANNED)
   serviceType      String?
   location         String?
   clockInTime      DateTime?
   clockOutTime     DateTime?
   clockInLocation  Json?
   clockOutLocation Json?
-  createdAt        DateTime     @default(now())
-  createdBy        User?        @relation("ShiftCreatedBy", fields: [createdById], references: [id])
+  createdAt        DateTime    @default(now())
+  createdBy        User?       @relation("ShiftCreatedBy", fields: [createdById], references: [id])
   createdById      String?
 
   progressNotes ProgressNote[]
+  appointments  Appointment[]
 
   @@map("shift")
 }
@@ -255,4 +267,56 @@ model Observation {
   recordedAt     DateTime // Time entered in the form, not submission time
 
   @@map("observation")
+}
+
+model Site {
+  id             String        @id @default(uuid())
+  organisation   Organisation  @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  organisationId String
+  name           String
+  address        String?
+  clients        Client[]
+  shifts         Shift[]
+  appointments   Appointment[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([organisationId, name])
+  @@map("site")
+}
+
+model Appointment {
+  id              String       @id @default(uuid())
+  organisation    Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  organisationId  String
+  title           String
+  description     String?
+  startTime       DateTime
+  endTime         DateTime?
+  durationMinutes Int?
+
+  site   Site?   @relation(fields: [siteId], references: [id])
+  siteId String?
+
+  client   Client? @relation(fields: [clientId], references: [id])
+  clientId String?
+
+  shift   Shift?  @relation(fields: [shiftId], references: [id])
+  shiftId String?
+
+  status        AppointmentStatus @default(SCHEDULED)
+  completedAt   DateTime?
+  completedBy   User?             @relation("AppointmentCompletedBy", fields: [completedById], references: [id])
+  completedById String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("appointment")
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
 }

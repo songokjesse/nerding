@@ -108,6 +108,24 @@ export async function getShift(id: string) {
                         dateOfBirth: true
                     }
                 },
+                site: {
+                    include: {
+                        clients: {
+                            select: {
+                                id: true,
+                                name: true,
+                                ndisNumber: true
+                            }
+                        }
+                    }
+                },
+                appointments: {
+                    include: {
+                        client: { select: { name: true } },
+                        site: { select: { name: true } }
+                    },
+                    orderBy: { startTime: 'asc' }
+                },
                 worker: {
                     select: {
                         id: true,
@@ -423,7 +441,7 @@ export async function reassignShiftWorker(shiftId: string, newWorkerId: string) 
 
 
 // Save an observation (creates a progress note if one doesn't exist for the shift)
-export async function saveObservation(shiftId: string, observationData: { moduleType: any, data: any }) {
+export async function saveObservation(shiftId: string, observationData: { moduleType: any, data: any }, clientId?: string) {
     try {
         const { membership, session } = await getOrgMembership()
 
@@ -460,10 +478,16 @@ export async function saveObservation(shiftId: string, observationData: { module
         })
 
         if (!note) {
+            const targetClientId = shift.clientId || clientId
+
+            if (!targetClientId) {
+                return { error: 'Client ID is required for this observation' }
+            }
+
             note = await prisma.progressNote.create({
                 data: {
                     organisationId: membership.organisationId,
-                    clientId: shift.clientId,
+                    clientId: targetClientId,
                     shiftId,
                     authorId: session.user.id,
                     noteText: "Clinical Observation Recorded", // Default text

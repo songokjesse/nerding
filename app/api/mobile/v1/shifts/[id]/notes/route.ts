@@ -89,11 +89,20 @@ export async function POST(
             return errorResponse('Shift not found or access denied', 'NOT_FOUND', 404)
         }
 
+        // Determine client ID
+        let targetClientId = shift.clientId
+        if (!targetClientId) {
+            if (!body.clientId) {
+                return errorResponse('Client ID is required for this shift', 'INVALID_INPUT', 400)
+            }
+            targetClientId = body.clientId
+        }
+
         // Create progress note
         const note = await prisma.progressNote.create({
             data: {
                 organisationId: context!.organisationId,
-                clientId: shift.clientId,
+                clientId: targetClientId!,
                 shiftId: id,
                 authorId: context!.userId,
                 noteText: noteText.trim(),

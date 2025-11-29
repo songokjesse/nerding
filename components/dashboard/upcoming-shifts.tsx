@@ -5,7 +5,7 @@ interface Shift {
     id: string
     startTime: Date
     endTime: Date
-    client: { name: string }
+    client: { name: string } | null
     worker: { name: string }
 }
 
@@ -41,7 +41,7 @@ export function UpcomingShifts({ shifts }: UpcomingShiftsProps) {
                         >
                             <div className="flex items-start justify-between">
                                 <div className="space-y-1">
-                                    <p className="font-medium text-sm">{shift.client.name}</p>
+                                    <p className="font-medium text-sm">{shift.client?.name || 'SIL Shift'}</p>
                                     <p className="text-xs text-muted-foreground">
                                         Worker: {shift.worker.name}
                                     </p>

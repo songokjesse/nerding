@@ -11,7 +11,7 @@ interface ShiftCardProps {
         status: ShiftStatus
         serviceType?: string | null
         location?: string | null
-        client: { name: string }
+        client: { name: string } | null
         worker: { name: string }
     }
 }
@@ -42,7 +42,7 @@ export function ShiftCard({ shift }: ShiftCardProps) {
             <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
                 <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
-                        <CardTitle className="text-lg">{shift.client.name}</CardTitle>
+                        <CardTitle className="text-lg">{shift.client?.name || 'SIL Shift'}</CardTitle>
                         <span className={`text-xs px-2 py-1 rounded-full ${statusColors[shift.status]}`}>
                             {statusLabels[shift.status]}
                         </span>
