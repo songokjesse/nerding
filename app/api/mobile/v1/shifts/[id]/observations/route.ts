@@ -97,10 +97,16 @@ export async function POST(
         })
 
         if (!note) {
+            const targetClientId = shift.clientId || body.clientId
+
+            if (!targetClientId) {
+                return errorResponse('Client ID is required for this shift', 'INVALID_INPUT', 400)
+            }
+
             note = await prisma.progressNote.create({
                 data: {
                     organisationId: context!.organisationId,
-                    clientId: shift.clientId,
+                    clientId: targetClientId,
                     shiftId: id,
                     authorId: context!.userId,
                     noteText: "Clinical Observation Recorded"

@@ -12,7 +12,8 @@ const progressNoteSchema = z.object({
     incidentFlag: z.boolean().optional(),
     behavioursFlag: z.boolean().optional(),
     medicationFlag: z.boolean().optional(),
-    mood: z.string().optional()
+    mood: z.string().optional(),
+    clientId: z.string().optional()
 })
 
 // Helper to get current user's org membership
@@ -67,7 +68,8 @@ export async function createProgressNote(shiftId: string, prevState: any, formDa
             incidentFlag: formData.get('incidentFlag') === 'on',
             behavioursFlag: formData.get('behavioursFlag') === 'on',
             medicationFlag: formData.get('medicationFlag') === 'on',
-            mood: formData.get('mood') || undefined
+            mood: formData.get('mood') || undefined,
+            clientId: formData.get('clientId') || undefined
         }
 
         const validated = progressNoteSchema.safeParse(rawData)
@@ -77,13 +79,19 @@ export async function createProgressNote(shiftId: string, prevState: any, formDa
             return { error: Object.values(errors)[0]?.[0] || 'Invalid input' }
         }
 
-        const { noteText, incidentFlag, behavioursFlag, medicationFlag, mood } = validated.data
+        const { noteText, incidentFlag, behavioursFlag, medicationFlag, mood, clientId } = validated.data
+
+        const targetClientId = shift.clientId || clientId
+
+        if (!targetClientId) {
+            return { error: 'Client ID is required' }
+        }
 
         // Create progress note
         await prisma.progressNote.create({
             data: {
                 organisationId: membership.organisationId,
-                clientId: shift.clientId,
+                clientId: targetClientId,
                 shiftId: shift.id,
                 authorId: session.user.id,
                 noteText,
