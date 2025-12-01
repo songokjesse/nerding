@@ -26,13 +26,18 @@ model User {
   role          Role      @default(VIEWER)
   banned        Boolean   @default(false)
 
+  qualifications  String[]  @default([]) // Array of strings for skills/certs
+  preferences     Json?     // Flexible JSON for worker preferences (e.g., preferred shifts, days off)
+  workerAvailability WorkerAvailability[] // Link to worker availability
+
   organisationMemberships OrganisationMember[]
   createdClients          Client[]
-  shiftsAsWorker          Shift[]              @relation("ShiftWorker")
-  createdShifts           Shift[]              @relation("ShiftCreatedBy")
+  shiftWorkerLink         ShiftWorker[]        // New: Link to ShiftWorker join table for M-N shifts
+  createdShifts           Shift[]              @relation("ShiftCreatedBy") // Still used for tracking who created the shift
   authoredNotes           ProgressNote[]       @relation("NoteAuthor")
   createdReports          MonthlyReport[]      @relation("ReportCreatedBy")
   reviewedReports         MonthlyReport[]      @relation("ReportReviewedBy")
+  completedAppointments   Appointment[]        @relation("AppointmentCompletedBy")
 
   @@unique([email])
   @@map("user")
@@ -100,11 +105,18 @@ model Organisation {
   plan         String   @default("free")
   createdAt    DateTime @default(now())
 
-  members        OrganisationMember[]
-  clients        Client[]
-  shifts         Shift[]
-  progressNotes  ProgressNote[]
+  members       OrganisationMember[]
+  clients       Client[]
+  shifts        Shift[]
+  progressNotes ProgressNote[]
+
   monthlyReports MonthlyReport[]
+  sites          Site[]
+  appointments   Appointment[]
+  rosteringRules RosteringRule[] // Link to rostering rules
+  workerAvailability WorkerAvailability[] // Link to worker availability within an organisation
+  shiftClients ShiftClient[] // New: Link to ShiftClient join table
+  shiftWorkers ShiftWorker[] // New: Link to ShiftWorker join table
 
   @@map("organisation")
 }
@@ -141,38 +153,130 @@ model Client {
   createdBy      User?        @relation(fields: [createdById], references: [id])
   createdById    String?
 
-  shifts         Shift[]
+  preferences Json? // Flexible JSON for client preferences (e.g., preferred workers, specific care instructions)
+
+  shiftClientLink ShiftClient[] // New: Link to ShiftClient join table for M-N shifts
+
   progressNotes  ProgressNote[]
   monthlyReports MonthlyReport[]
+
   enabledModules ClientModule[]
+  site           Site?          @relation(fields: [siteId], references: [id])
+  siteId         String?
+  appointments   Appointment[]
 
   @@map("client")
 }
 
 model Shift {
-  id               String       @id @default(uuid())
-  organisation     Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
-  organisationId   String
-  client           Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  clientId         String
-  worker           User         @relation("ShiftWorker", fields: [workerId], references: [id])
-  workerId         String
+  id             String       @id @default(uuid())
+  organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  organisationId String
+
+  // Remove direct client and worker relations, replaced by join tables
+  // client           Client?     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  // clientId         String?
+  // worker           User        @relation("ShiftWorker", fields: [workerId], references: [id])
+  // workerId         String
+
+  site             Site?       @relation(fields: [siteId], references: [id])
+  siteId           String?
   startTime        DateTime
   endTime          DateTime
-  status           ShiftStatus  @default(PLANNED)
+  status           ShiftStatus @default(PLANNED)
   serviceType      String?
   location         String?
   clockInTime      DateTime?
   clockOutTime     DateTime?
   clockInLocation  Json?
   clockOutLocation Json?
-  createdAt        DateTime     @default(now())
-  createdBy        User?        @relation("ShiftCreatedBy", fields: [createdById], references: [id])
+  createdAt        DateTime    @default(now())
+  createdBy        User?       @relation("ShiftCreatedBy", fields: [createdById], references: [id])
   createdById      String?
 
+  shiftClientLink ShiftClient[] // New: Link to ShiftClient join table for M-N clients
+  shiftWorkerLink ShiftWorker[] // New: Link to ShiftWorker join table for M-N workers
+
   progressNotes ProgressNote[]
+  appointments  Appointment[]
 
   @@map("shift")
+}
+
+// New Join Table for Shift <-> Client (Many-to-Many)
+model ShiftClient {
+  id             String       @default(uuid())
+  organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  organisationId String
+
+  shift   Shift  @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  shiftId String
+  client  Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId String
+
+  @@unique([shiftId, clientId]) // Composite unique constraint
+  @@map("shift_client")
+}
+
+// New Join Table for Shift <-> User (Many-to-Many Workers)
+model ShiftWorker {
+  id             String       @default(uuid())
+  organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  organisationId String
+
+  shift   Shift @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  shiftId String
+  worker  User  @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  workerId String
+
+  @@unique([shiftId, workerId]) // Composite unique constraint
+  @@map("shift_worker")
+}
+
+// New model for Worker Availability
+model WorkerAvailability {
+  id             String       @default(uuid())
+  organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  organisationId String
+
+  worker   User   @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  workerId String
+
+  date         DateTime
+  startTime    DateTime // e.g., 09:00:00.000Z on that date for a specific start time on that day
+  endTime      DateTime // e.g., 17:00:00.000Z on that date for a specific end time on that day
+  isAvailable  Boolean  @default(true) // Whether they are generally available for work
+  notes        String?
+
+  @@unique([organisationId, workerId, date, startTime]) // Composite unique constraint
+  @@map("worker_availability")
+}
+
+// New model for Rostering Rules
+model RosteringRule {
+  id             String       @id @default(uuid())
+  organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  organisationId String
+
+  name        String
+  description String?
+  type        RosteringRuleType
+  ruleJson    Json              // Structured JSON representing the rule logic (e.g., max hours, min break)
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@unique([organisationId, name]) // Rule names must be unique per organisation
+  @@map("rostering_rule")
+}
+
+enum RosteringRuleType {
+  HARD_CONSTRAINT
+  SOFT_PREFERENCE
+  COMPLIANCE
+  CLIENT_SPECIFIC
+  WORKER_SPECIFIC
+  GENERAL
 }
 
 enum ShiftStatus {
@@ -255,4 +359,56 @@ model Observation {
   recordedAt     DateTime // Time entered in the form, not submission time
 
   @@map("observation")
+}
+
+model Site {
+  id             String        @id @default(uuid())
+  organisation   Organisation  @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  organisationId String
+  name           String
+  address        String?
+  clients        Client[]
+  shifts         Shift[]
+  appointments   Appointment[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([organisationId, name])
+  @@map("site")
+}
+
+model Appointment {
+  id              String       @id @default(uuid())
+  organisation    Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  organisationId  String
+  title           String
+  description     String?
+  startTime       DateTime
+  endTime         DateTime?
+  durationMinutes Int?
+
+  site   Site?   @relation(fields: [siteId], references: [id])
+  siteId String?
+
+  client   Client? @relation(fields: [clientId], references: [id])
+  clientId String?
+
+  shift   Shift?  @relation(fields: [shiftId], references: [id])
+  shiftId String?
+
+  status        AppointmentStatus @default(SCHEDULED)
+  completedAt   DateTime?
+  completedBy   User?             @relation("AppointmentCompletedBy", fields: [completedById], references: [id])
+  completedById String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("appointment")
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
 }

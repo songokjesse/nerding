@@ -16,9 +16,17 @@ export async function GET(
         // Check if worker has any shifts with this client
         const hasAccess = await prisma.shift.findFirst({
             where: {
-                clientId: id,
                 organisationId: context!.organisationId,
-                workerId: context!.userId
+                shiftClientLink: {
+                    some: {
+                        clientId: id
+                    }
+                },
+                shiftWorkerLink: {
+                    some: {
+                        workerId: context!.userId
+                    }
+                }
             }
         })
 

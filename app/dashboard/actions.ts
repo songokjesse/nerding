@@ -73,8 +73,16 @@ export async function getDashboardData() {
                 orderBy: { startTime: 'asc' },
                 take: 5,
                 include: {
-                    client: { select: { name: true } },
-                    worker: { select: { name: true } }
+                    shiftClientLink: {
+                        include: {
+                            client: { select: { name: true } }
+                        }
+                    },
+                    shiftWorkerLink: {
+                        include: {
+                            worker: { select: { name: true } }
+                        }
+                    }
                 }
             }),
 

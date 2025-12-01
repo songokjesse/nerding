@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { authenticateRequest, successResponse, errorResponse } from '@/lib/api-auth'
+import { getWorkerShiftWhereClause } from '@/lib/mobile-api-helpers'
 import prisma from '@/lib/prisma'
 import { ShiftStatus } from '@/generated/prisma/client/enums'
 
@@ -18,11 +19,7 @@ export async function POST(
 
         // Verify shift access
         const shift = await prisma.shift.findFirst({
-            where: {
-                id,
-                organisationId: context!.organisationId,
-                workerId: context!.userId
-            }
+            where: getWorkerShiftWhereClause(id, context!.userId, context!.organisationId)
         })
 
         if (!shift) {

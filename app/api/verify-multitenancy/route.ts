@@ -44,16 +44,25 @@ export async function GET() {
         })
         console.log('Created Client:', client.id)
 
-        // 5. Create Shift
+        // Create test shift
         const shift = await prisma.shift.create({
             data: {
                 organisationId: org.id,
-                clientId: client.id,
-                workerId: user.id,
                 startTime: new Date(),
                 endTime: new Date(Date.now() + 3600000), // 1 hour later
-                status: 'PLANNED',
-                createdById: user.id
+                status: 'PLANNED' as any,
+                shiftClientLink: {
+                    create: {
+                        clientId: client.id,
+                        organisationId: org.id
+                    }
+                },
+                shiftWorkerLink: {
+                    create: {
+                        workerId: user.id,
+                        organisationId: org.id
+                    }
+                }
             }
         })
         console.log('Created Shift:', shift.id)

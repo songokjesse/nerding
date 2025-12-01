@@ -18,16 +18,24 @@ export async function GET(
             where: {
                 id,
                 organisationId: context!.organisationId,
-                workerId: context!.userId // Only worker's own shifts
+                shiftWorkerLink: {
+                    some: {
+                        workerId: context!.userId
+                    }
+                }
             },
             include: {
-                client: {
-                    select: {
-                        id: true,
-                        name: true,
-                        ndisNumber: true,
-                        dateOfBirth: true,
-                        notes: true
+                shiftClientLink: {
+                    include: {
+                        client: {
+                            select: {
+                                id: true,
+                                name: true,
+                                ndisNumber: true,
+                                dateOfBirth: true,
+                                notes: true
+                            }
+                        }
                     }
                 },
                 progressNotes: {
@@ -50,16 +58,18 @@ export async function GET(
             return errorResponse('Shift not found or access denied', 'NOT_FOUND', 404)
         }
 
-        // Get enabled modules for the client
-        const modules = await prisma.clientModule.findMany({
+        const client = shift.shiftClientLink[0]?.client || null
+
+        // Get enabled modules for the client (if shift has a client)
+        const modules = client ? await prisma.clientModule.findMany({
             where: {
-                clientId: shift.clientId,
+                clientId: client.id,
                 isEnabled: true
             },
             select: {
                 moduleType: true
             }
-        })
+        }) : []
 
         // Extract all observations from progress notes
         const allObservations = shift.progressNotes
@@ -69,11 +79,11 @@ export async function GET(
         return successResponse({
             shift: {
                 id: shift.id,
-                client: {
-                    ...shift.client,
-                    dateOfBirth: shift.client.dateOfBirth?.toLocaleString('sv-SE').replace(' ', 'T'),
+                client: client ? {
+                    ...client,
+                    dateOfBirth: client.dateOfBirth?.toLocaleString('sv-SE').replace(' ', 'T'),
                     enabledModules: modules.map(m => m.moduleType)
-                },
+                } : null,
                 startTime: shift.startTime.toLocaleString('sv-SE').replace(' ', 'T'),
                 endTime: shift.endTime.toLocaleString('sv-SE').replace(' ', 'T'),
                 status: shift.status,
