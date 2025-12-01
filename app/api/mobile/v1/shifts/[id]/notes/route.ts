@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { authenticateRequest, successResponse, errorResponse } from '@/lib/api-auth'
+import { getWorkerShiftWhereClause } from '@/lib/mobile-api-helpers'
 import prisma from '@/lib/prisma'
 
 export async function GET(
@@ -15,11 +16,7 @@ export async function GET(
 
         // Verify shift access
         const shift = await prisma.shift.findFirst({
-            where: {
-                id,
-                organisationId: context!.organisationId,
-                workerId: context!.userId
-            }
+            where: getWorkerShiftWhereClause(id, context!.userId, context!.organisationId)
         })
 
         if (!shift) {
@@ -76,12 +73,17 @@ export async function POST(
             return errorResponse('Note text is required', 'INVALID_INPUT', 400)
         }
 
-        // Verify shift access
+        // Verify shift access and get shift with clients
         const shift = await prisma.shift.findFirst({
-            where: {
-                id,
-                organisationId: context!.organisationId,
-                workerId: context!.userId
+            where: getWorkerShiftWhereClause(id, context!.userId, context!.organisationId),
+            include: {
+                shiftClientLink: {
+                    include: {
+                        client: {
+                            select: { id: true }
+                        }
+                    }
+                }
             }
         })
 
@@ -90,10 +92,15 @@ export async function POST(
         }
 
         // Determine client ID
-        let targetClientId = shift.clientId
+        let targetClientId = shift.shiftClientLink[0]?.clientId
         if (!targetClientId) {
             if (!body.clientId) {
                 return errorResponse('Client ID is required for this shift', 'INVALID_INPUT', 400)
+            }
+            // Verify the provided clientId is linked to this shift
+            const clientLinked = shift.shiftClientLink.some(sc => sc.clientId === body.clientId)
+            if (!clientLinked) {
+                return errorResponse('Client not associated with this shift', 'INVALID_INPUT', 400)
             }
             targetClientId = body.clientId
         }

@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { authenticateRequest, successResponse, errorResponse } from '@/lib/api-auth'
+import { getWorkerShiftWhereClause } from '@/lib/mobile-api-helpers'
 import prisma from '@/lib/prisma'
 import { ModuleType } from '@/generated/prisma/client/enums'
 
@@ -16,11 +17,7 @@ export async function GET(
 
         // Verify shift access
         const shift = await prisma.shift.findFirst({
-            where: {
-                id,
-                organisationId: context!.organisationId,
-                workerId: context!.userId
-            }
+            where: getWorkerShiftWhereClause(id, context!.userId, context!.organisationId)
         })
 
         if (!shift) {
@@ -74,12 +71,17 @@ export async function POST(
             return errorResponse('Invalid module type', 'INVALID_INPUT', 400)
         }
 
-        // Verify shift access
+        // Verify shift access and get clients
         const shift = await prisma.shift.findFirst({
-            where: {
-                id,
-                organisationId: context!.organisationId,
-                workerId: context!.userId
+            where: getWorkerShiftWhereClause(id, context!.userId, context!.organisationId),
+            include: {
+                shiftClientLink: {
+                    include: {
+                        client: {
+                            select: { id: true }
+                        }
+                    }
+                }
             }
         })
 
@@ -97,7 +99,7 @@ export async function POST(
         })
 
         if (!note) {
-            const targetClientId = shift.clientId || body.clientId
+            const targetClientId = shift.shiftClientLink[0]?.clientId || body.clientId
 
             if (!targetClientId) {
                 return errorResponse('Client ID is required for this shift', 'INVALID_INPUT', 400)

@@ -1,19 +1,25 @@
-# Implementation Strategy: Multi-Tenant Gemini-Powered Rostering Engine
+# Implementation Strategy: Multi-Tenant Rostering API with Future Gemini Integration
 
 ## 1. Introduction
 
-This document outlines an implementation strategy for developing a robust, multi-tenant rostering engine integrated with Google Gemini, designed to enhance shift allocation and management for different companies. The engine will function as a specialized backend service, interacting with the existing Next.js application (frontend) and PostgreSQL database.
+This document outlines a **refactored** implementation strategy for developing a robust, multi-tenant rostering API for shift allocation and management. 
+
+**Key Changes from Original Strategy:**
+- **Architecture**: Using Next.js API routes instead of separate Python/FastAPI microservice
+- **Approach**: Phased implementation - Core rostering functionality first, Gemini AI integration later
+- **Rationale**: Simplifies deployment, leverages existing authentication/multi-tenancy infrastructure, faster time-to-value
+
+The rostering API will be built as part of the existing Next.js application under `/api/v1/rostering/`, utilizing the already-defined database schema including `ShiftClient`, `ShiftWorker`, `WorkerAvailability`, and `RosteringRule` models.
 
 ## 2. Architectural Overview
 
-The architecture follows a microservice-like pattern, introducing a dedicated Rostering Service that leverages AI.
+The refactored architecture integrates rostering capabilities directly into the existing Next.js application:
 
 *   **Frontend:** Existing Next.js Application (React/TypeScript)
-*   **Core Application Backend:** Existing Next.js API Routes / Server Actions
-*   **Rostering Service/API (NEW):** Python FastAPI (recommended) or Node.js NestJS (with Gemini integration)
-*   **Database:** PostgreSQL (shared)
-*   **AI Engine:** Google Gemini LLM
-*   **Multi-tenancy:** Enforced via `organisationId` across all layers.
+*   **Backend:** Next.js API Routes (TypeScript) - **includes new Rostering API**
+*   **Database:** PostgreSQL (with Prisma ORM)
+*   **AI Engine (Phase 2):** Google Gemini LLM integration
+*   **Multi-tenancy:** Enforced via `organisationId` across all layers
 
 ```
 +-------------------+      +---------------------------------+
@@ -26,49 +32,58 @@ The architecture follows a microservice-like pattern, introducing a dedicated Ro
                                        |
                                        | API Calls (HTTP/HTTPS)
                                        |
-                   +-----------------------------------------------------------------------+
-                   |                                                                       |
-                   V                                                                       V
-+---------------------------------+                             +-------------------------------------------------+
-|    Core Application Backend     |                             |             Rostering Service/API               |
-| (Next.js API Routes/Server Actions) |                             | (Python FastAPI/Node.js NestJS + Gemini LLM Integration) |
-|   - User/Client/Basic Shift Mgt.|                             |   - Rostering Logic & Optimization              |
-|   - Reporting                   |                             |   - Worker Allocation (LLM-assisted intelligence) |
-|   - Basic Data Operations       |                             |   - Constraint Management (LLM-assisted interpretation) |
-|   - Authentication/AuthZ Logic  |                             |   - Availability Management                     |
-+---------------------------------+                             |                     |                           |
-               |                                                 |                     V                           |
-               |                                                 |           +---------------------------+       |
-               | Database Queries (Prisma ORM)                   |           |   Gemini LLM Provider API   |       |
-               V                                                 |           | (Google Gemini API / OpenRouter)  |
-+----------------------------------------------------------------+           +---------------------------+       |
-|                                 PostgreSQL Database                             |             ^ (Data/Context:       ^
-|         (Users, Clients, Shifts, Reports, Rostering-Specific Tables, etc.)      |<------------| worker skills, client needs, |
-+---------------------------------------------------------------------------------+             |  shift rules, historical data)  |
-                                                                                               +-------------------------------+
+                   +-------------------+-------------------+
+                   |                                       |
+                   V                                       V
++------------------------------------------------+  +---------------------------+
+|         Next.js Backend (API Routes)           |  |   Gemini LLM (Phase 2)   |
+|  - Authentication & Authorization              |  | (Google Generative AI)   |
+|  - User/Client Management                      |  +---------------------------+
+|  - Progress Notes & Reports                    |              |
+|  - NEW: Rostering API (/api/v1/rostering/*)   |<-------------+
+|    * Shift Management (M-N workers/clients)    |  (Enhanced suggestions,
+|    * Worker Availability                       |   rule interpretation,
+|    * Rostering Rules                           |   optimization)
+|    * Roster Suggestions & Validation           |
++------------------------------------------------+
+                   |
+                   | Database Queries (Prisma ORM)
+                   V
++----------------------------------------------------------------+
+|                    PostgreSQL Database                         |
+|  - Users, Clients, Shifts, Sites                               |
+|  - ShiftWorker, ShiftClient (M-N join tables)                  |
+|  - WorkerAvailability, RosteringRule                           |
++----------------------------------------------------------------+
 ```
 
-## 3. Phase 1: Backend - Core Rostering Service Foundation
 
-**Objective:** Establish the foundational data model, API, and multi-tenancy enforcement for core rostering capabilities, independent of AI.
+## 3. Phase 1: Backend - Core Rostering API Foundation
+
+**Objective:** Implement core rostering API endpoints in Next.js with proper multi-tenancy enforcement and M-N relationship support.
+
+**Status:** ✅ Database schema already includes all necessary models (`ShiftClient`, `ShiftWorker`, `WorkerAvailability`, `RosteringRule`)
 
 **Key Tasks:**
 
-*   **3.1. Schema Modifications (Prisma for PostgreSQL):**
-    *   Introduce join tables for many-to-many relationships:
-        *   `ShiftClient`: Links `Shift` to multiple `Client`s (e.g., for SIL houses).
-        *   `ShiftWorker`: Links `Shift` to multiple `User`s (support workers).
-    *   Add fields for worker availability, qualifications, client preferences, and structured rostering rules.
-    *   Ensure all new tables/entities include `organisationId` for multi-tenancy.
-*   **3.2. Rostering Service Setup (Python FastAPI Recommended):**
-    *   Initialize a new FastAPI project.
-    *   Set up database connectivity using an ORM compatible with Prisma/PostgreSQL (e.g., SQLAlchemy with Pydantic for data validation, or directly using Prisma Client Python if available and preferred).
-    *   Implement Pydantic models for request/response validation.
-*   **3.3. Multi-tenancy Enforcement:**
-    *   Implement middleware or dependency injection in FastAPI to extract `organisationId` from authenticated requests.
-    *   Ensure all database queries automatically filter by the `organisationId` for the current context.
-*   **3.4. Core Rostering Logic (CRUD):**
-    *   Implement API endpoints for managing roster components.
+*   **3.1. Create TypeScript Type Definitions:**
+    *   Define request/response DTOs for all rostering endpoints
+    *   Define rostering rule structures by type
+    *   Create suggestion and validation response types
+*   **3.2. Implement Core Rostering API Routes:**
+    *   Create `/api/v1/rostering/shifts` - CRUD operations with M-N support
+    *   Create `/api/v1/rostering/availability` - Worker availability management
+    *   Create `/api/v1/rostering/rules` - Rostering rules management
+    *   All routes use existing `authenticateRequest` middleware for multi-tenancy
+*   **3.3. Validation & Business Logic:**
+    *   Implement rule validation engine in TypeScript
+    *   Create constraint checking functions
+    *   Build conflict detection utilities
+    *   Add time overlap and qualification matching helpers
+*   **3.4. Roster Suggestions (Algorithmic):**
+    *   Implement basic worker-client matching algorithm
+    *   Add availability conflict detection
+    *   Create score-based ranking system
 
 **Expected Endpoints (Rostering Service - Core):**
 
@@ -113,19 +128,30 @@ All endpoints will implicitly operate within the context of the authenticated us
     *   **Request Body:** `RosteringRuleCreateDto`
     *   **Response:** `RosteringRule`
 
-## 4. Phase 2: Backend - Gemini Integration
+## 4. Phase 2: Gemini AI Integration (Future Enhancement)
 
-**Objective:** Integrate Gemini into the Rostering Service to provide AI-assisted functionalities.
+**Objective:** Enhance the rostering API with Gemini-powered intelligent features.
+
+**Prerequisites:** Phase 1 core API must be completed and stable
 
 **Key Tasks:**
 
-*   **4.1. Gemini API Wrapper:** Implement a robust wrapper for Google Gemini API calls (similar to your `GeminiModel` class), handling retries, error management, and context passing.
-*   **4.2. Prompt Engineering & Output Parsing:**
-    *   Develop effective prompts for various AI tasks (suggestion, validation, interpretation).
-    *   Ensure Gemini's output is consistently structured (e.g., JSON) and implement robust parsing and validation within the service.
-*   **4.3. LLM-Assisted Allocation Logic:**
-    *   Implement internal logic to prepare data (workers, shifts, rules) for Gemini prompts.
-    *   Process Gemini's responses and integrate them into roster data structures.
+*   **4.1. Gemini API Integration:**
+    *   Leverage existing Gemini integration (already used for AI rephrase feature)
+    *   Create rostering-specific prompt templates
+    *   Implement structured output parsing for roster suggestions
+*   **4.2. Enhanced Suggestion Engine:**
+    *   Upgrade `/api/v1/rostering/suggestions` to use Gemini
+    *   Provide natural language explanations for suggestions
+    *   Learn from historical roster patterns
+    *   Handle complex preference matching
+*   **4.3. Natural Language Rule Interpretation:**
+    *   Add `/api/v1/rostering/interpret-rules` endpoint
+    *   Convert natural language rules to structured `ruleJson`
+    *   Validate interpreted rules before saving
+*   **4.4. Intelligent Conflict Resolution:**
+    *   Use Gemini to suggest resolutions for roster conflicts
+    *   Provide reasoning for recommended changes
 
 **Expected Endpoints (Rostering Service - Gemini Integration):**
 
@@ -166,31 +192,34 @@ All endpoints will implicitly operate within the context of the authenticated us
     *   Implement dashboards to review AI-generated suggestions, highlight conflicts, and allow managers to override or adjust allocations.
     *   Provide feedback mechanisms for improving AI suggestions.
 
-## 6. Phase 4: Deployment & Operations
+## 6. Phase 4: Deployment & Monitoring
 
-**Objective:** Deploy and maintain the new Rostering Service and integrated features securely and efficiently.
+**Objective:** Deploy rostering API features and monitor usage.
 
 **Key Tasks:**
 
-*   **6.1. Containerization:** Create Dockerfiles for the Rostering Service.
-*   **6.2. Deployment:**
-    *   Deploy the Rostering Service (e.g., to Google Cloud Run or AWS ECS with Fargate).
-    *   Ensure the existing Next.js app (frontend) is updated to point to the new Rostering Service API endpoints.
-*   **6.3. Monitoring, Logging, Alerting:**
-    *   Implement comprehensive monitoring for both the Rostering Service and Gemini API usage (latency, errors, cost).
-    *   Set up centralized logging and alerting for rapid issue detection.
-*   **6.4. Security:**
-    *   Ensure API authentication and authorization are robust.
-    *   Manage API keys for Gemini securely (e.g., via environment variables, secret managers).
+*   **6.1. Deployment:**
+    *   Rostering API deploys as part of existing Next.js application
+    *   No separate service deployment needed
+    *   Standard Vercel deployment process
+*   **6.2. Monitoring:**
+    *   Track rostering API endpoint usage
+    *   Monitor Gemini API calls and costs (Phase 2)
+    *   Set up alerts for validation failures or conflicts
+*   **6.3. Security:**
+    *   Rostering API uses existing authentication via Better Auth
+    *   Multi-tenancy enforced via `organisationId` filtering
+    *   Gemini API keys managed via environment variables
 
 ## 7. Technology Stack Summary
 
 *   **Frontend:** Next.js (React, TypeScript)
-*   **Core Application Backend:** Next.js API Routes / Server Actions (Node.js, TypeScript)
-*   **Rostering Service Backend:** Python FastAPI (recommended) or Node.js NestJS (with TypeScript)
-*   **AI Integration:** Google Gemini API
-*   **Database:** PostgreSQL (with Prisma ORM for both backends)
-*   **Deployment:** Google Cloud Run or AWS ECS/Fargate for Rostering Service; Vercel for Next.js frontend.
+*   **Backend (Unified):** Next.js API Routes (TypeScript)
+*   **Rostering API:** Next.js API Routes under `/api/v1/rostering/*`
+*   **AI Integration (Phase 2):** Google Gemini API (already integrated)
+*   **Database:** PostgreSQL with Prisma ORM
+*   **Authentication:** Better Auth (existing)
+*   **Deployment:** Vercel (existing deployment pipeline)
 
 ## 8. Future Considerations
 

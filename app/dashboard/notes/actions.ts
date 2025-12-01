@@ -12,8 +12,7 @@ const progressNoteSchema = z.object({
     incidentFlag: z.boolean().optional(),
     behavioursFlag: z.boolean().optional(),
     medicationFlag: z.boolean().optional(),
-    mood: z.string().optional(),
-    clientId: z.string().optional()
+    mood: z.string().optional()
 })
 
 // Helper to get current user's org membership
@@ -48,6 +47,10 @@ export async function createProgressNote(shiftId: string, prevState: any, formDa
             where: {
                 id: shiftId,
                 organisationId: membership.organisationId
+            },
+            include: {
+                shiftClientLink: true,
+                shiftWorkerLink: true
             }
         })
 
@@ -56,7 +59,7 @@ export async function createProgressNote(shiftId: string, prevState: any, formDa
         }
 
         // Check if user is the assigned worker or a coordinator
-        const isAssignedWorker = shift.workerId === session.user.id
+        const isAssignedWorker = shift.shiftWorkerLink.some(sw => sw.workerId === session.user.id)
         const isCoordinator = membership.role === 'ORG_ADMIN' || membership.role === 'COORDINATOR'
 
         if (!isAssignedWorker && !isCoordinator) {
@@ -68,8 +71,7 @@ export async function createProgressNote(shiftId: string, prevState: any, formDa
             incidentFlag: formData.get('incidentFlag') === 'on',
             behavioursFlag: formData.get('behavioursFlag') === 'on',
             medicationFlag: formData.get('medicationFlag') === 'on',
-            mood: formData.get('mood') || undefined,
-            clientId: formData.get('clientId') || undefined
+            mood: formData.get('mood') || undefined
         }
 
         const validated = progressNoteSchema.safeParse(rawData)
@@ -79,19 +81,18 @@ export async function createProgressNote(shiftId: string, prevState: any, formDa
             return { error: Object.values(errors)[0]?.[0] || 'Invalid input' }
         }
 
-        const { noteText, incidentFlag, behavioursFlag, medicationFlag, mood, clientId } = validated.data
+        const { noteText, incidentFlag, behavioursFlag, medicationFlag, mood } = validated.data
 
-        const targetClientId = shift.clientId || clientId
-
-        if (!targetClientId) {
-            return { error: 'Client ID is required' }
+        const clientId = shift.shiftClientLink[0]?.clientId
+        if (!clientId) {
+            return { error: 'No client associated with this shift' }
         }
 
         // Create progress note
         await prisma.progressNote.create({
             data: {
                 organisationId: membership.organisationId,
-                clientId: targetClientId,
+                clientId: clientId,
                 shiftId: shift.id,
                 authorId: session.user.id,
                 noteText,
@@ -104,7 +105,7 @@ export async function createProgressNote(shiftId: string, prevState: any, formDa
 
         revalidatePath(`/dashboard/shifts/${shiftId}`)
         revalidatePath('/dashboard/my-shifts')
-        revalidatePath(`/dashboard/clients/${shift.clientId}`)
+        revalidatePath(`/dashboard/clients/${clientId}`)
 
         return { success: true }
     } catch (error) {

@@ -18,7 +18,11 @@ export async function GET(request: NextRequest) {
         // Build where clause
         const where: any = {
             organisationId: context!.organisationId,
-            workerId: context!.userId
+            shiftWorkerLink: {
+                some: {
+                    workerId: context!.userId
+                }
+            }
         }
 
         // Add date filters if provided
@@ -37,11 +41,15 @@ export async function GET(request: NextRequest) {
         const shifts = await prisma.shift.findMany({
             where,
             include: {
-                client: {
-                    select: {
-                        id: true,
-                        name: true,
-                        ndisNumber: true
+                shiftClientLink: {
+                    include: {
+                        client: {
+                            select: {
+                                id: true,
+                                name: true,
+                                ndisNumber: true
+                            }
+                        }
                     }
                 },
                 progressNotes: {
@@ -69,7 +77,7 @@ export async function GET(request: NextRequest) {
 
                 return {
                     id: shift.id,
-                    client: shift.client,
+                    client: shift.shiftClientLink[0]?.client || null,
                     startTime: shift.startTime.toLocaleString('sv-SE').replace(' ', 'T'),
                     endTime: shift.endTime.toLocaleString('sv-SE').replace(' ', 'T'),
                     status: shift.status,

@@ -33,12 +33,18 @@ export default async function ShiftDetailPage({ params }: { params: Promise<{ id
         notFound()
     }
 
-    let modules: any[] = []
-    if (shift.clientId) {
-        const result = await getClientModules(shift.clientId)
-        modules = result.modules || []
+    if (!shift.clientId) {
+        return (
+            <div className="p-6">
+                <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 p-4 rounded-lg">
+                    <p className="font-medium">Incomplete Shift Data</p>
+                    <p className="text-sm mt-1">This shift does not have a client assigned.</p>
+                </div>
+            </div>
+        )
     }
 
+    const { modules } = await getClientModules(shift.clientId)
     const bowelMonitoringEnabled = modules?.some(m => m.moduleType === ModuleType.BOWEL_MONITORING && m.isEnabled)
     const fluidIntakeEnabled = modules?.some(m => m.moduleType === ModuleType.FLUID_INTAKE && m.isEnabled)
     const seizureMonitoringEnabled = modules?.some(m => m.moduleType === ModuleType.SEIZURE_MONITORING && m.isEnabled)
@@ -58,9 +64,9 @@ export default async function ShiftDetailPage({ params }: { params: Promise<{ id
             {/* Header */}
             <div className="flex items-start justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold">{shift.client?.name || shift.site?.name}</h1>
+                    <h1 className="text-3xl font-bold">{shift.client.name}</h1>
                     <p className="text-muted-foreground mt-1">
-                        Shift Details {shift.site && '(SIL House)'}
+                        Shift Details
                     </p>
                 </div>
                 <span className={`text-sm px-3 py-1 rounded-full ${statusColors[shift.status]}`}>
@@ -143,41 +149,6 @@ export default async function ShiftDetailPage({ params }: { params: Promise<{ id
                         </CardContent>
                     </Card>
 
-                    {/* Appointments Section */}
-                    {shift.appointments && shift.appointments.length > 0 && (
-                        <Card>
-                            <CardHeader>
-                                <div className="flex items-center gap-2">
-                                    <Calendar className="h-5 w-5 text-muted-foreground" />
-                                    <CardTitle>Appointments & Events</CardTitle>
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-4">
-                                    {shift.appointments.map((apt: any) => (
-                                        <div key={apt.id} className="flex items-start justify-between border-b pb-4 last:border-0 last:pb-0">
-                                            <div>
-                                                <p className="font-medium">{apt.title}</p>
-                                                <p className="text-sm text-muted-foreground">
-                                                    {new Date(apt.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                    {apt.endTime && ` - ${new Date(apt.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
-                                                </p>
-                                                {apt.client && (
-                                                    <p className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded inline-block mt-1">
-                                                        {apt.client.name}
-                                                    </p>
-                                                )}
-                                            </div>
-                                            <div className="text-sm text-muted-foreground">
-                                                {apt.status}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
-
                     {/* Clinical Observations Section - Visible to all */}
                     {allObservations.length > 0 && (
                         <Card>
@@ -197,8 +168,6 @@ export default async function ShiftDetailPage({ params }: { params: Promise<{ id
                     {isAssignedWorker && (
                         <ShiftObservationSection
                             shiftId={shift.id}
-                            clients={shift.site?.clients || []}
-                            defaultClientId={shift.clientId}
                             bowelMonitoringEnabled={!!bowelMonitoringEnabled}
                             fluidIntakeEnabled={!!fluidIntakeEnabled}
                             seizureMonitoringEnabled={!!seizureMonitoringEnabled}
@@ -282,70 +251,39 @@ export default async function ShiftDetailPage({ params }: { params: Promise<{ id
                     </Card>
                 </div>
 
-                {/* Right Column - Client/Site Info */}
+                {/* Right Column - Client Info */}
                 <div className="space-y-6">
-                    {shift.client ? (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Client Information</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Client Information</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            <div>
+                                <p className="text-sm text-muted-foreground">Name</p>
+                                <p className="font-medium">{shift.client.name}</p>
+                            </div>
+                            {shift.client.ndisNumber && (
                                 <div>
-                                    <p className="text-sm text-muted-foreground">Name</p>
-                                    <p className="font-medium">{shift.client.name}</p>
+                                    <p className="text-sm text-muted-foreground">NDIS Number</p>
+                                    <p className="font-medium">{shift.client.ndisNumber}</p>
                                 </div>
-                                {shift.client.ndisNumber && (
-                                    <div>
-                                        <p className="text-sm text-muted-foreground">NDIS Number</p>
-                                        <p className="font-medium">{shift.client.ndisNumber}</p>
-                                    </div>
-                                )}
-                                {shift.client.dateOfBirth && (
-                                    <div>
-                                        <p className="text-sm text-muted-foreground">Date of Birth</p>
-                                        <p className="font-medium">
-                                            {new Date(shift.client.dateOfBirth).toLocaleDateString()}
-                                        </p>
-                                    </div>
-                                )}
-                                <Link
-                                    href={`/dashboard/clients/${shift.client.id}`}
-                                    className="text-sm text-primary hover:underline inline-block mt-2"
-                                >
-                                    View full client profile →
-                                </Link>
-                            </CardContent>
-                        </Card>
-                    ) : shift.site ? (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>House Information</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
+                            )}
+                            {shift.client.dateOfBirth && (
                                 <div>
-                                    <p className="text-sm text-muted-foreground">Site Name</p>
-                                    <p className="font-medium">{shift.site.name}</p>
+                                    <p className="text-sm text-muted-foreground">Date of Birth</p>
+                                    <p className="font-medium">
+                                        {new Date(shift.client.dateOfBirth).toLocaleDateString()}
+                                    </p>
                                 </div>
-
-                                <div>
-                                    <p className="text-sm text-muted-foreground mb-2">Residents</p>
-                                    <div className="space-y-2">
-                                        {shift.site.clients.map((client: any) => (
-                                            <div key={client.id} className="flex items-center justify-between p-2 bg-muted rounded-md">
-                                                <span className="font-medium text-sm">{client.name}</span>
-                                                <Link
-                                                    href={`/dashboard/clients/${client.id}`}
-                                                    className="text-xs text-primary hover:underline"
-                                                >
-                                                    View Profile
-                                                </Link>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ) : null}
+                            )}
+                            <Link
+                                href={`/dashboard/clients/${shift.client.id}`}
+                                className="text-sm text-primary hover:underline inline-block mt-2"
+                            >
+                                View full client profile →
+                            </Link>
+                        </CardContent>
+                    </Card>
                 </div>
             </div>
         </div>
