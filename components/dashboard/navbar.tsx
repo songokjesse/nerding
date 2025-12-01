@@ -66,6 +66,14 @@ export function Navbar({ user }: NavbarProps) {
                             Shifts
                         </Button>
                     </Link>
+                    <Link href="/dashboard/rostering" prefetch>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                        >
+                            Rostering
+                        </Button>
+                    </Link>
                     <Link href="/dashboard/my-shifts" prefetch>
                         <Button
                             variant="ghost"

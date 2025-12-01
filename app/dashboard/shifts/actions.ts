@@ -296,6 +296,103 @@ export async function createShift(prevState: any, formData: FormData) {
     }
 }
 
+
+const rosterShiftSchema = z.object({
+    clientIds: z.array(z.string()).min(1, "At least one client is required"),
+    workerIds: z.array(z.string()).min(1, "At least one worker is required"),
+    startTime: z.string().min(1, "Start time is required"),
+    endTime: z.string().min(1, "End time is required"),
+    serviceType: z.string().optional(),
+    location: z.string().optional()
+})
+
+export async function createRosterShift(prevState: any, formData: FormData) {
+    try {
+        const { membership, session } = await getOrgMembership()
+
+        if (!([OrgRole.ORG_ADMIN, OrgRole.COORDINATOR] as OrgRole[]).includes(membership.role)) {
+            return { error: 'Insufficient permissions to create shifts' }
+        }
+
+        const rawData = {
+            clientIds: formData.getAll('clientIds'),
+            workerIds: formData.getAll('workerIds'),
+            startTime: formData.get('startTime'),
+            endTime: formData.get('endTime'),
+            serviceType: formData.get('serviceType'),
+            location: formData.get('location')
+        }
+
+        const validated = rosterShiftSchema.safeParse(rawData)
+
+        if (!validated.success) {
+            const errors = validated.error.flatten().fieldErrors
+            return { error: Object.values(errors)[0]?.[0] || 'Invalid input' }
+        }
+
+        const { clientIds, workerIds, startTime, endTime, serviceType, location } = validated.data
+
+        // Verify clients
+        const clients = await prisma.client.findMany({
+            where: {
+                id: { in: clientIds },
+                organisationId: membership.organisationId
+            }
+        })
+
+        if (clients.length !== clientIds.length) {
+            return { error: 'One or more clients not found' }
+        }
+
+        // Verify workers
+        const workers = await prisma.organisationMember.findMany({
+            where: {
+                userId: { in: workerIds },
+                organisationId: membership.organisationId
+            }
+        })
+
+        if (workers.length !== workerIds.length) {
+            return { error: 'One or more workers not found' }
+        }
+
+        // Create shift with M-N relationships
+        await prisma.shift.create({
+            data: {
+                organisationId: membership.organisationId,
+                shiftClientLink: {
+                    create: clientIds.map(clientId => ({
+                        clientId,
+                        organisationId: membership.organisationId
+                    }))
+                },
+                shiftWorkerLink: {
+                    create: workerIds.map(workerId => ({
+                        workerId,
+                        organisationId: membership.organisationId
+                    }))
+                },
+                startTime: new Date(startTime),
+                endTime: new Date(endTime),
+                serviceType: serviceType || null,
+                location: location || null,
+                status: ShiftStatus.PLANNED,
+                createdById: session.user.id
+            }
+        })
+
+        revalidatePath('/dashboard/shifts')
+        revalidatePath('/dashboard/rostering/calendar')
+        revalidatePath('/dashboard/my-shifts')
+
+        return { success: true }
+
+    } catch (error) {
+        console.error('Failed to create roster shift:', error)
+        return { error: 'Failed to create shift' }
+    }
+}
+
 // Update shift status
 export async function updateShiftStatus(shiftId: string, status: ShiftStatus) {
     try {
