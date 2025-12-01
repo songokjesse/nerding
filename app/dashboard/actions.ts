@@ -36,7 +36,7 @@ export async function getDashboardData() {
             clientCount,
             memberCount,
             recentClients,
-            upcomingShifts,
+            upcomingShiftsData,
             recentNotes,
             shiftsThisWeek
         ] = await Promise.all([
@@ -108,6 +108,14 @@ export async function getDashboardData() {
                 }
             })
         ])
+
+        const upcomingShifts = upcomingShiftsData.map(shift => ({
+            ...shift,
+            client: shift.shiftClientLink[0]?.client || { name: 'Unknown' },
+            worker: shift.shiftWorkerLink[0]?.worker || { name: 'Unknown' },
+            clientId: shift.shiftClientLink[0]?.clientId || null,
+            workerId: shift.shiftWorkerLink[0]?.workerId || null
+        }))
 
         return {
             organisation: membership.organisation,

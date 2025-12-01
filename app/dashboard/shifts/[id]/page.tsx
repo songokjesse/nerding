@@ -33,6 +33,17 @@ export default async function ShiftDetailPage({ params }: { params: Promise<{ id
         notFound()
     }
 
+    if (!shift.clientId) {
+        return (
+            <div className="p-6">
+                <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 p-4 rounded-lg">
+                    <p className="font-medium">Incomplete Shift Data</p>
+                    <p className="text-sm mt-1">This shift does not have a client assigned.</p>
+                </div>
+            </div>
+        )
+    }
+
     const { modules } = await getClientModules(shift.clientId)
     const bowelMonitoringEnabled = modules?.some(m => m.moduleType === ModuleType.BOWEL_MONITORING && m.isEnabled)
     const fluidIntakeEnabled = modules?.some(m => m.moduleType === ModuleType.FLUID_INTAKE && m.isEnabled)

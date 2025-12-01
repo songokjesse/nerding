@@ -47,6 +47,10 @@ export async function createProgressNote(shiftId: string, prevState: any, formDa
             where: {
                 id: shiftId,
                 organisationId: membership.organisationId
+            },
+            include: {
+                shiftClientLink: true,
+                shiftWorkerLink: true
             }
         })
 
@@ -55,7 +59,7 @@ export async function createProgressNote(shiftId: string, prevState: any, formDa
         }
 
         // Check if user is the assigned worker or a coordinator
-        const isAssignedWorker = shift.workerId === session.user.id
+        const isAssignedWorker = shift.shiftWorkerLink.some(sw => sw.workerId === session.user.id)
         const isCoordinator = membership.role === 'ORG_ADMIN' || membership.role === 'COORDINATOR'
 
         if (!isAssignedWorker && !isCoordinator) {
@@ -79,11 +83,16 @@ export async function createProgressNote(shiftId: string, prevState: any, formDa
 
         const { noteText, incidentFlag, behavioursFlag, medicationFlag, mood } = validated.data
 
+        const clientId = shift.shiftClientLink[0]?.clientId
+        if (!clientId) {
+            return { error: 'No client associated with this shift' }
+        }
+
         // Create progress note
         await prisma.progressNote.create({
             data: {
                 organisationId: membership.organisationId,
-                clientId: shift.clientId,
+                clientId: clientId,
                 shiftId: shift.id,
                 authorId: session.user.id,
                 noteText,
@@ -96,7 +105,7 @@ export async function createProgressNote(shiftId: string, prevState: any, formDa
 
         revalidatePath(`/dashboard/shifts/${shiftId}`)
         revalidatePath('/dashboard/my-shifts')
-        revalidatePath(`/dashboard/clients/${shift.clientId}`)
+        revalidatePath(`/dashboard/clients/${clientId}`)
 
         return { success: true }
     } catch (error) {

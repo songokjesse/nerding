@@ -45,15 +45,31 @@ export async function getShifts() {
     try {
         const { membership } = await getOrgMembership()
 
-        const shifts = await prisma.shift.findMany({
+        const shiftsData = await prisma.shift.findMany({
             where: { organisationId: membership.organisationId },
             include: {
-                client: { select: { name: true, ndisNumber: true } },
-                worker: { select: { name: true, email: true } },
+                shiftClientLink: {
+                    include: {
+                        client: { select: { name: true, ndisNumber: true } }
+                    }
+                },
+                shiftWorkerLink: {
+                    include: {
+                        worker: { select: { name: true, email: true } }
+                    }
+                },
                 createdBy: { select: { name: true } }
             },
             orderBy: { startTime: 'desc' }
         })
+
+        const shifts = shiftsData.map(shift => ({
+            ...shift,
+            client: shift.shiftClientLink[0]?.client || { name: 'Unknown', ndisNumber: '' },
+            worker: shift.shiftWorkerLink[0]?.worker || { name: 'Unknown', email: '' },
+            clientId: shift.shiftClientLink[0]?.clientId || null,
+            workerId: shift.shiftWorkerLink[0]?.workerId || null
+        }))
 
         return { shifts }
     } catch (error) {
@@ -67,20 +83,38 @@ export async function getMyShifts() {
     try {
         const { session, membership } = await getOrgMembership()
 
-        const shifts = await prisma.shift.findMany({
+        const shiftsData = await prisma.shift.findMany({
             where: {
                 organisationId: membership.organisationId,
-                workerId: session.user.id
+                shiftWorkerLink: {
+                    some: { workerId: session.user.id }
+                }
             },
             include: {
-                client: { select: { name: true, ndisNumber: true } },
-                worker: { select: { name: true, email: true } },
+                shiftClientLink: {
+                    include: {
+                        client: { select: { name: true, ndisNumber: true } }
+                    }
+                },
+                shiftWorkerLink: {
+                    include: {
+                        worker: { select: { name: true, email: true } }
+                    }
+                },
                 progressNotes: {
                     select: { id: true }
                 }
             },
             orderBy: { startTime: 'desc' }
         })
+
+        const shifts = shiftsData.map(shift => ({
+            ...shift,
+            client: shift.shiftClientLink[0]?.client || { name: 'Unknown', ndisNumber: '' },
+            worker: shift.shiftWorkerLink[0]?.worker || { name: 'Unknown', email: '' },
+            clientId: shift.shiftClientLink[0]?.clientId || null,
+            workerId: shift.shiftWorkerLink[0]?.workerId || null
+        }))
 
         return { shifts }
     } catch (error) {
@@ -94,25 +128,33 @@ export async function getShift(id: string) {
     try {
         const { membership, session } = await getOrgMembership()
 
-        const shift = await prisma.shift.findFirst({
+        const shiftData = await prisma.shift.findFirst({
             where: {
                 id,
                 organisationId: membership.organisationId
             },
             include: {
-                client: {
-                    select: {
-                        id: true,
-                        name: true,
-                        ndisNumber: true,
-                        dateOfBirth: true
+                shiftClientLink: {
+                    include: {
+                        client: {
+                            select: {
+                                id: true,
+                                name: true,
+                                ndisNumber: true,
+                                dateOfBirth: true
+                            }
+                        }
                     }
                 },
-                worker: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true
+                shiftWorkerLink: {
+                    include: {
+                        worker: {
+                            select: {
+                                id: true,
+                                name: true,
+                                email: true
+                            }
+                        }
                     }
                 },
                 createdBy: {
@@ -132,12 +174,20 @@ export async function getShift(id: string) {
             }
         })
 
-        if (!shift) {
+        if (!shiftData) {
             return { error: 'Shift not found' }
         }
 
+        const shift = {
+            ...shiftData,
+            client: shiftData.shiftClientLink[0]?.client || null,
+            worker: shiftData.shiftWorkerLink[0]?.worker || null,
+            clientId: shiftData.shiftClientLink[0]?.clientId || null,
+            workerId: shiftData.shiftWorkerLink[0]?.workerId || null
+        }
+
         // Check if current user is the assigned worker
-        const isAssignedWorker = shift.workerId === session.user.id
+        const isAssignedWorker = shiftData.shiftWorkerLink.some(sw => sw.workerId === session.user.id)
 
         return { shift, isAssignedWorker }
     } catch (error) {
@@ -199,8 +249,12 @@ export async function createShift(prevState: any, formData: FormData) {
         await prisma.shift.create({
             data: {
                 organisationId: membership.organisationId,
-                clientId,
-                workerId,
+                shiftClientLink: {
+                    create: { clientId, organisationId: membership.organisationId }
+                },
+                shiftWorkerLink: {
+                    create: { workerId, organisationId: membership.organisationId }
+                },
                 startTime: new Date(startTime),
                 endTime: new Date(endTime),
                 serviceType: serviceType || null,
@@ -233,7 +287,8 @@ export async function updateShiftStatus(shiftId: string, status: ShiftStatus) {
             where: {
                 id: shiftId,
                 organisationId: membership.organisationId
-            }
+            },
+            include: { shiftWorkerLink: true }
         })
 
         if (!shift) {
@@ -241,7 +296,7 @@ export async function updateShiftStatus(shiftId: string, status: ShiftStatus) {
         }
 
         // Check permissions: worker can update their own shifts, coordinators can update any
-        const isAssignedWorker = shift.workerId === session.user.id
+        const isAssignedWorker = shift.shiftWorkerLink.some(sw => sw.workerId === session.user.id)
         const isCoordinator = ([OrgRole.ORG_ADMIN, OrgRole.COORDINATOR] as OrgRole[]).includes(membership.role)
 
         if (!isAssignedWorker && !isCoordinator) {
@@ -298,7 +353,7 @@ export async function getShiftsForDateRange(startDate: Date, endDate: Date) {
     try {
         const { membership } = await getOrgMembership()
 
-        const shifts = await prisma.shift.findMany({
+        const shiftsData = await prisma.shift.findMany({
             where: {
                 organisationId: membership.organisationId,
                 startTime: {
@@ -307,12 +362,20 @@ export async function getShiftsForDateRange(startDate: Date, endDate: Date) {
                 }
             },
             include: {
-                client: { select: { id: true, name: true, ndisNumber: true } },
-                worker: { select: { id: true, name: true, email: true } },
+                shiftClientLink: { include: { client: { select: { id: true, name: true, ndisNumber: true } } } },
+                shiftWorkerLink: { include: { worker: { select: { id: true, name: true, email: true } } } },
                 createdBy: { select: { name: true } }
             },
             orderBy: { startTime: 'asc' }
         })
+
+        const shifts = shiftsData.map(shift => ({
+            ...shift,
+            client: shift.shiftClientLink[0]?.client || { name: 'Unknown', ndisNumber: '' },
+            worker: shift.shiftWorkerLink[0]?.worker || { name: 'Unknown', email: '' },
+            clientId: shift.shiftClientLink[0]?.clientId || null,
+            workerId: shift.shiftWorkerLink[0]?.workerId || null
+        }))
 
         return { shifts }
     } catch (error) {
@@ -403,10 +466,19 @@ export async function reassignShiftWorker(shiftId: string, newWorkerId: string) 
             return { error: 'Worker not found in your organization' }
         }
 
-        // Update shift worker
-        await prisma.shift.update({
-            where: { id: shiftId },
-            data: { workerId: newWorkerId }
+        // Update shift worker - replace existing workers with new one
+        // First delete existing links
+        await prisma.shiftWorker.deleteMany({
+            where: { shiftId }
+        })
+
+        // Then create new link
+        await prisma.shiftWorker.create({
+            data: {
+                shiftId,
+                workerId: newWorkerId,
+                organisationId: membership.organisationId
+            }
         })
 
         revalidatePath('/dashboard/shifts')
@@ -430,7 +502,10 @@ export async function saveObservation(shiftId: string, observationData: { module
         // Get shift
         const shift = await prisma.shift.findFirst({
             where: { id: shiftId, organisationId: membership.organisationId },
-            include: { client: true }
+            include: {
+                shiftClientLink: { include: { client: true } },
+                shiftWorkerLink: true
+            }
         })
 
         if (!shift) {
@@ -438,7 +513,7 @@ export async function saveObservation(shiftId: string, observationData: { module
         }
 
         // Check if user is assigned worker or coordinator
-        const isAssignedWorker = shift.workerId === session.user.id
+        const isAssignedWorker = shift.shiftWorkerLink.some(sw => sw.workerId === session.user.id)
         const isCoordinator = ([OrgRole.ORG_ADMIN, OrgRole.COORDINATOR] as OrgRole[]).includes(membership.role)
 
         if (!isAssignedWorker && !isCoordinator) {
@@ -446,11 +521,6 @@ export async function saveObservation(shiftId: string, observationData: { module
         }
 
         // Find or create progress note for this shift/author
-        // Note: We're assuming one note per author per shift for simplicity in this flow,
-        // or we just attach to the most recent one, or create a new one.
-        // For this implementation, let's find the most recent note by this author for this shift,
-        // or create a new "Observation Note" if none exists.
-
         let note = await prisma.progressNote.findFirst({
             where: {
                 shiftId,
@@ -460,13 +530,18 @@ export async function saveObservation(shiftId: string, observationData: { module
         })
 
         if (!note) {
+            const clientId = shift.shiftClientLink[0]?.clientId
+            if (!clientId) {
+                return { error: 'No client associated with this shift' }
+            }
+
             note = await prisma.progressNote.create({
                 data: {
                     organisationId: membership.organisationId,
-                    clientId: shift.clientId,
+                    clientId: clientId,
                     shiftId,
                     authorId: session.user.id,
-                    noteText: "Clinical Observation Recorded", // Default text
+                    noteText: "Clinical Observation Recorded",
                 }
             })
         }
@@ -480,7 +555,7 @@ export async function saveObservation(shiftId: string, observationData: { module
             data: {
                 progressNoteId: note.id,
                 type: observationData.moduleType,
-                data: dataWithoutRecordedAt, // Store data without recordedAt since it's a separate field
+                data: dataWithoutRecordedAt,
                 recordedAt: observationTime
             }
         })
