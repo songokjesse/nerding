@@ -26,13 +26,13 @@ model User {
   role          Role      @default(VIEWER)
   banned        Boolean   @default(false)
 
-  qualifications  String[]  @default([]) // Array of strings for skills/certs
-  preferences     Json?     // Flexible JSON for worker preferences (e.g., preferred shifts, days off)
+  qualifications     String[]             @default([]) // Array of strings for skills/certs
+  preferences        Json? // Flexible JSON for worker preferences (e.g., preferred shifts, days off)
   workerAvailability WorkerAvailability[] // Link to worker availability
 
   organisationMemberships OrganisationMember[]
   createdClients          Client[]
-  shiftWorkerLink         ShiftWorker[]        // New: Link to ShiftWorker join table for M-N shifts
+  shiftWorkerLink         ShiftWorker[] // New: Link to ShiftWorker join table for M-N shifts
   createdShifts           Shift[]              @relation("ShiftCreatedBy") // Still used for tracking who created the shift
   authoredNotes           ProgressNote[]       @relation("NoteAuthor")
   createdReports          MonthlyReport[]      @relation("ReportCreatedBy")
@@ -110,13 +110,13 @@ model Organisation {
   shifts        Shift[]
   progressNotes ProgressNote[]
 
-  monthlyReports MonthlyReport[]
-  sites          Site[]
-  appointments   Appointment[]
-  rosteringRules RosteringRule[] // Link to rostering rules
+  monthlyReports     MonthlyReport[]
+  sites              Site[]
+  appointments       Appointment[]
+  rosteringRules     RosteringRule[] // Link to rostering rules
   workerAvailability WorkerAvailability[] // Link to worker availability within an organisation
-  shiftClients ShiftClient[] // New: Link to ShiftClient join table
-  shiftWorkers ShiftWorker[] // New: Link to ShiftWorker join table
+  shiftClients       ShiftClient[] // New: Link to ShiftClient join table
+  shiftWorkers       ShiftWorker[] // New: Link to ShiftWorker join table
 
   @@map("organisation")
 }
@@ -209,9 +209,9 @@ model ShiftClient {
   organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
   organisationId String
 
-  shift   Shift  @relation(fields: [shiftId], references: [id], onDelete: Cascade)
-  shiftId String
-  client  Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  shift    Shift  @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  shiftId  String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
   clientId String
 
   @@unique([shiftId, clientId]) // Composite unique constraint
@@ -224,9 +224,9 @@ model ShiftWorker {
   organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
   organisationId String
 
-  shift   Shift @relation(fields: [shiftId], references: [id], onDelete: Cascade)
-  shiftId String
-  worker  User  @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  shift    Shift  @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  shiftId  String
+  worker   User   @relation(fields: [workerId], references: [id], onDelete: Cascade)
   workerId String
 
   @@unique([shiftId, workerId]) // Composite unique constraint
@@ -242,11 +242,11 @@ model WorkerAvailability {
   worker   User   @relation(fields: [workerId], references: [id], onDelete: Cascade)
   workerId String
 
-  date         DateTime
-  startTime    DateTime // e.g., 09:00:00.000Z on that date for a specific start time on that day
-  endTime      DateTime // e.g., 17:00:00.000Z on that date for a specific end time on that day
-  isAvailable  Boolean  @default(true) // Whether they are generally available for work
-  notes        String?
+  date        DateTime
+  startTime   DateTime // e.g., 09:00:00.000Z on that date for a specific start time on that day
+  endTime     DateTime // e.g., 17:00:00.000Z on that date for a specific end time on that day
+  isAvailable Boolean  @default(true) // Whether they are generally available for work
+  notes       String?
 
   @@unique([organisationId, workerId, date, startTime]) // Composite unique constraint
   @@map("worker_availability")
@@ -261,10 +261,10 @@ model RosteringRule {
   name        String
   description String?
   type        RosteringRuleType
-  ruleJson    Json              // Structured JSON representing the rule logic (e.g., max hours, min break)
-  isActive    Boolean       @default(true)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  ruleJson    Json // Structured JSON representing the rule logic (e.g., max hours, min break)
+  isActive    Boolean           @default(true)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 
   @@unique([organisationId, name]) // Rule names must be unique per organisation
   @@map("rostering_rule")

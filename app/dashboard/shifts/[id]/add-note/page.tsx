@@ -51,8 +51,8 @@ export default async function AddNotePage({ params }: { params: { id: string } }
                     <div className="flex items-center gap-3">
                         <User className="h-5 w-5 text-muted-foreground" />
                         <div>
-                            <p className="text-sm text-muted-foreground">Client</p>
-                            <p className="font-medium">{shift.client.name}</p>
+                            <p className="text-sm text-muted-foreground">Client/Site</p>
+                            <p className="font-medium">{shift.client?.name || shift.site?.name}</p>
                         </div>
                     </div>
 
@@ -91,7 +91,11 @@ export default async function AddNotePage({ params }: { params: { id: string } }
             </Card>
 
             {/* Progress Note Form */}
-            <ProgressNoteForm shiftId={shift.id} />
+            <ProgressNoteForm
+                shiftId={shift.id}
+                clients={shift.site?.clients || []}
+                defaultClientId={shift.clientId}
+            />
         </div>
     )
 }

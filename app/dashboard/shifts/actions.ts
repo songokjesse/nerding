@@ -146,6 +146,7 @@ export async function getShift(id: string) {
                         }
                     }
                 },
+
                 shiftWorkerLink: {
                     include: {
                         worker: {
@@ -156,6 +157,24 @@ export async function getShift(id: string) {
                             }
                         }
                     }
+                },
+                site: {
+                    include: {
+                        clients: {
+                            select: {
+                                id: true,
+                                name: true,
+                                ndisNumber: true
+                            }
+                        }
+                    }
+                },
+                appointments: {
+                    include: {
+                        client: { select: { name: true } },
+                        site: { select: { name: true } }
+                    },
+                    orderBy: { startTime: 'asc' }
                 },
                 createdBy: {
                     select: { name: true }
@@ -495,7 +514,7 @@ export async function reassignShiftWorker(shiftId: string, newWorkerId: string) 
 
 
 // Save an observation (creates a progress note if one doesn't exist for the shift)
-export async function saveObservation(shiftId: string, observationData: { moduleType: any, data: any }) {
+export async function saveObservation(shiftId: string, observationData: { moduleType: any, data: any }, clientId?: string) {
     try {
         const { membership, session } = await getOrgMembership()
 
@@ -530,15 +549,16 @@ export async function saveObservation(shiftId: string, observationData: { module
         })
 
         if (!note) {
-            const clientId = shift.shiftClientLink[0]?.clientId
-            if (!clientId) {
-                return { error: 'No client associated with this shift' }
+            const targetClientId = shift.shiftClientLink[0]?.clientId || clientId
+
+            if (!targetClientId) {
+                return { error: 'Client ID is required for this observation' }
             }
 
             note = await prisma.progressNote.create({
                 data: {
                     organisationId: membership.organisationId,
-                    clientId: clientId,
+                    clientId: targetClientId,
                     shiftId,
                     authorId: session.user.id,
                     noteText: "Clinical Observation Recorded",

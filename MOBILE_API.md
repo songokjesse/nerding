@@ -98,6 +98,8 @@ Get detailed information about a specific shift.
 **Endpoint:** `GET /api/mobile/v1/shifts/:id`
 
 **Response:** `200 OK`
+
+**Traditional 1:1 Shift:**
 ```json
 {
   "shift": {
@@ -115,11 +117,64 @@ Get detailed information about a specific shift.
     "status": "PLANNED",
     "serviceType": "Personal Care",
     "location": "123 Main St",
+    "clockInTime": null,
+    "clockOutTime": null,
+    "clockInLocation": null,
+    "clockOutLocation": null,
     "progressNotes": [...],
     "observations": [...]
   }
 }
 ```
+
+**SIL (Site-Based) Shift:**
+```json
+{
+  "shift": {
+    "id": "shift456...",
+    "client": null,
+    "site": {
+      "id": "site789...",
+      "name": "123 Maple Street",
+      "address": "123 Maple St, Sydney NSW",
+      "residents": [
+        {
+          "id": "client001...",
+          "name": "John Doe",
+          "ndisNumber": "111222333",
+          "dateOfBirth": "1975-03-20T00:00:00.000Z",
+          "enabledModules": ["BOWEL_MONITORING", "SEIZURE_MONITORING"]
+        },
+        {
+          "id": "client002...",
+          "name": "Mary Johnson",
+          "ndisNumber": "444555666",
+          "dateOfBirth": "1982-07-10T00:00:00.000Z",
+          "enabledModules": ["BGL_MONITORING", "FLUID_INTAKE"]
+        }
+      ]
+    },
+    "startTime": "2025-01-15T07:00:00.000Z",
+    "endTime": "2025-01-15T15:00:00.000Z",
+    "status": "IN_PROGRESS",
+    "serviceType": "SIL Support",
+    "location": "123 Maple Street",
+    "clockInTime": "2025-01-15T06:55:00.000Z",
+    "clockOutTime": null,
+    "clockInLocation": {"lat": -33.8688, "lng": 151.2093, "accuracy": 10},
+    "clockOutLocation": null,
+    "progressNotes": [...],
+    "observations": [...]
+  }
+}
+```
+
+**Notes:**
+- For traditional shifts, `client` contains the single client's data
+- For SIL shifts, `client` is `null` and `site` contains the house information with all residents
+- Each resident in a SIL shift includes their own `enabledModules` array
+- Mobile clients should check if `client` is null to determine shift type
+- All resident data is included in a single request (no additional queries needed)
 
 ---
 
@@ -275,9 +330,16 @@ Create a new clinical observation.
     "mealContext": "Before Meal",
     "notes": "Patient feeling well"
   },
-  "recordedAt": "2025-01-15T10:30:00.000Z"
+  "recordedAt": "2025-01-15T10:30:00.000Z",
+  "clientId": "client123..."
 }
 ```
+
+**Fields:**
+- `moduleType` (required): Type of observation
+- `data` (required): Observation-specific data
+- `recordedAt` (optional): Time of observation (defaults to now)
+- `clientId` (required for SIL shifts): The resident this observation is for
 
 **Module Types:**
 - `BOWEL_MONITORING`
@@ -398,7 +460,8 @@ Create a new progress note for a shift.
   "mood": "Happy",
   "incidentFlag": false,
   "behavioursFlag": false,
-  "medicationFlag": false
+  "medicationFlag": false,
+  "clientId": "client123..."
 }
 ```
 
@@ -408,6 +471,7 @@ Create a new progress note for a shift.
 - `incidentFlag` (optional): Flag for incidents (default: false)
 - `behavioursFlag` (optional): Flag for behavioral concerns (default: false)
 - `medicationFlag` (optional): Flag for medication-related notes (default: false)
+- `clientId` (required for SIL shifts): The resident this note is for
 
 **Response:** `201 Created`
 ```json

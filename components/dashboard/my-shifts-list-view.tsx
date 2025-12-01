@@ -23,7 +23,7 @@ interface Shift {
     status: ShiftStatus
     serviceType?: string | null
     location?: string | null
-    client: { name: string }
+    client: { name: string } | null
     worker: { name: string }
     progressNotes: { id: string }[]
 }
@@ -55,7 +55,7 @@ export function MyShiftsListView({ shifts }: MyShiftsListViewProps) {
     const filteredShifts = shifts.filter((shift) => {
         const query = searchQuery.toLowerCase()
         return (
-            shift.client.name.toLowerCase().includes(query) ||
+            (shift.client?.name && shift.client.name.toLowerCase().includes(query)) ||
             (shift.location && shift.location.toLowerCase().includes(query))
         )
     })
@@ -186,7 +186,7 @@ function ShiftTable({ shifts, showNoteStatus }: { shifts: Shift[], showNoteStatu
                                         {startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </div>
                                 </TableCell>
-                                <TableCell className="font-medium">{shift.client.name}</TableCell>
+                                <TableCell className="font-medium">{shift.client?.name || 'N/A'}</TableCell>
                                 <TableCell>
                                     {shift.location ? (
                                         <div className="flex items-center gap-2">

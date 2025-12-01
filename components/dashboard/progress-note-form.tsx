@@ -7,12 +7,23 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { createProgressNote } from '@/app/dashboard/notes/actions'
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import { useState } from 'react'
 
 interface ProgressNoteFormProps {
     shiftId: string
+    clients?: { id: string, name: string | null }[]
+    defaultClientId?: string | null
 }
 
-export function ProgressNoteForm({ shiftId }: ProgressNoteFormProps) {
+export function ProgressNoteForm({ shiftId, clients, defaultClientId }: ProgressNoteFormProps) {
+    const [selectedClientId, setSelectedClientId] = useState<string>(defaultClientId || "")
     const router = useRouter()
     const createNoteWithShiftId = createProgressNote.bind(null, shiftId)
     const [state, formAction, isPending] = useActionState(createNoteWithShiftId, null)
@@ -33,6 +44,25 @@ export function ProgressNoteForm({ shiftId }: ProgressNoteFormProps) {
             </CardHeader>
             <CardContent>
                 <form action={formAction} className="space-y-4">
+                    <input type="hidden" name="clientId" value={selectedClientId} />
+
+                    {clients && clients.length > 0 && (
+                        <div className="space-y-2">
+                            <Label>Client *</Label>
+                            <Select value={selectedClientId} onValueChange={setSelectedClientId} required>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select client..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {clients.map((client) => (
+                                        <SelectItem key={client.id} value={client.id}>
+                                            {client.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
                     {/* Note Text */}
                     <div className="space-y-2">
                         <Label htmlFor="noteText">Progress Note *</Label>
