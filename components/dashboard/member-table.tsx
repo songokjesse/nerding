@@ -20,7 +20,8 @@ import {
     SelectValue,
 } from '@/components/ui/select'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Trash2 } from 'lucide-react'
+import { Trash2, Shield } from 'lucide-react'
+import Link from 'next/link'
 
 interface Member {
     id: string
@@ -75,6 +76,7 @@ export function MemberTable({ members, currentUserRole, currentUserId }: MemberT
                     <TableRow>
                         <TableHead>User</TableHead>
                         <TableHead>Role</TableHead>
+                        <TableHead>Credentials</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -113,6 +115,14 @@ export function MemberTable({ members, currentUserRole, currentUserId }: MemberT
                                         {member.role}
                                     </span>
                                 )}
+                            </TableCell>
+                            <TableCell>
+                                <Link href={`/dashboard/rostering/workers/${member.user.id}/credentials`}>
+                                    <Button variant="outline" size="sm" className="gap-2">
+                                        <Shield className="w-4 h-4" />
+                                        Credentials
+                                    </Button>
+                                </Link>
                             </TableCell>
                             <TableCell className="text-right">
                                 {canManage && member.user.id !== currentUserId && (
