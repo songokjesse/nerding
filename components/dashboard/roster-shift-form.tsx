@@ -236,10 +236,10 @@ export function RosterShiftForm({ clients, workers }: RosterShiftFormProps) {
                     <div className="space-y-3">
                         <ShiftValidationIndicator
                             status={
-                                isValidating ? 'PENDING' :
-                                    hasHardViolations ? 'BLOCKED' :
-                                        hasWarnings ? 'WARNING' :
-                                            'VALID'
+                                isValidating ? 'pending' :
+                                    hasHardViolations ? 'blocked' :
+                                        hasWarnings ? 'warning' :
+                                            'valid'
                             }
                             violationCount={validationResult?.violations.length || 0}
                             warningCount={validationResult?.warnings.length || 0}
