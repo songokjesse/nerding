@@ -143,8 +143,8 @@ export function RosterShiftForm({ clients, workers }: RosterShiftFormProps) {
         form.requestSubmit()
     }
 
-    const hasHardViolations = validationResult && !validationResult.valid && !validationResult.canOverride
-    const hasWarnings = validationResult && validationResult.warnings.length > 0
+    const hasHardViolations = !!(validationResult && !validationResult.valid && !validationResult.canOverride)
+    const hasWarnings = !!(validationResult && validationResult.warnings.length > 0)
 
     return (
         <>
