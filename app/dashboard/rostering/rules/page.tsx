@@ -5,24 +5,34 @@ import Link from "next/link"
 import prisma from "@/lib/prisma"
 
 async function getRulesStats() {
-    // Get counts for credentials and requirements
-    const [totalCredentials, expiringCredentials, totalRequirements] = await Promise.all([
-        prisma.workerCredential.count(),
-        prisma.workerCredential.count({
-            where: {
-                expiryDate: {
-                    lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-                    gte: new Date()
+    try {
+        // Get counts for credentials and requirements
+        const [totalCredentials, expiringCredentials, totalRequirements] = await Promise.all([
+            prisma.workerCredential.count().catch(() => 0),
+            prisma.workerCredential.count({
+                where: {
+                    expiryDate: {
+                        lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+                        gte: new Date()
+                    }
                 }
-            }
-        }),
-        prisma.clientRequirement.count()
-    ])
+            }).catch(() => 0),
+            prisma.clientRequirement.count().catch(() => 0)
+        ])
 
-    return {
-        totalCredentials,
-        expiringCredentials,
-        totalRequirements
+        return {
+            totalCredentials,
+            expiringCredentials,
+            totalRequirements
+        }
+    } catch (error) {
+        // Return zeros if tables don't exist yet (during migration)
+        console.error('Error fetching rules stats:', error)
+        return {
+            totalCredentials: 0,
+            expiringCredentials: 0,
+            totalRequirements: 0
+        }
     }
 }
 
