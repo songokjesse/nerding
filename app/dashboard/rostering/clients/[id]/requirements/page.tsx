@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma"
 import { ClientRequirementsClient } from "./client"
 
 interface PageProps {
-    params: { id: string }
+    params: Promise<{ id: string }>
 }
 
 async function getClientWithRequirements(clientId: string) {
@@ -18,7 +18,8 @@ async function getClientWithRequirements(clientId: string) {
 }
 
 export default async function ClientRequirementsPage({ params }: PageProps) {
-    const client = await getClientWithRequirements(params.id)
+    const { id } = await params
+    const client = await getClientWithRequirements(id)
 
     if (!client) {
         notFound()

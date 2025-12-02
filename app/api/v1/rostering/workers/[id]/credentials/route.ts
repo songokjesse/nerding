@@ -9,13 +9,13 @@ import { CredentialType } from '@/generated/prisma/client/enums'
  */
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     const { context, error } = await authenticateRequest(request)
     if (error) return error
 
     try {
-        const workerId = params.id
+        const { id: workerId } = await params
 
         // Verify worker belongs to organization
         const worker = await prisma.user.findFirst({
@@ -60,13 +60,13 @@ export async function GET(
  */
 export async function POST(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     const { context, error } = await authenticateRequest(request)
     if (error) return error
 
     try {
-        const workerId = params.id
+        const { id: workerId } = await params
         const body = await request.json()
 
         // Validate required fields
@@ -133,13 +133,13 @@ export async function POST(
  */
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     const { context, error } = await authenticateRequest(request)
     if (error) return error
 
     try {
-        const workerId = params.id
+        const { id: workerId } = await params
         const body = await request.json()
 
         if (!body.credentialId) {
@@ -200,13 +200,13 @@ export async function PUT(
  */
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     const { context, error } = await authenticateRequest(request)
     if (error) return error
 
     try {
-        const workerId = params.id
+        const { id: workerId } = await params
         const { searchParams } = new URL(request.url)
         const credentialId = searchParams.get('credentialId')
 

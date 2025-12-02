@@ -9,13 +9,13 @@ import { RiskLevel } from '@/generated/prisma/client/enums'
  */
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     const { context, error } = await authenticateRequest(request)
     if (error) return error
 
     try {
-        const clientId = params.id
+        const { id: clientId } = await params
 
         // Verify client belongs to organization
         const client = await prisma.client.findFirst({
@@ -66,13 +66,13 @@ export async function GET(
  */
 export async function POST(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     const { context, error } = await authenticateRequest(request)
     if (error) return error
 
     try {
-        const clientId = params.id
+        const { id: clientId } = await params
         const body = await request.json()
 
         // Verify client belongs to organization
@@ -152,13 +152,13 @@ export async function POST(
  */
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     const { context, error } = await authenticateRequest(request)
     if (error) return error
 
     try {
-        const clientId = params.id
+        const { id: clientId } = await params
         const body = await request.json()
 
         // Verify client belongs to organization and has requirements
@@ -237,13 +237,13 @@ export async function PUT(
  */
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     const { context, error } = await authenticateRequest(request)
     if (error) return error
 
     try {
-        const clientId = params.id
+        const { id: clientId } = await params
 
         // Verify client belongs to organization and has requirements
         const client = await prisma.client.findFirst({

@@ -4,7 +4,7 @@ import prisma from "@/lib/prisma"
 import { WorkerCredentialsClient } from "./client"
 
 interface PageProps {
-    params: { id: string }
+    params: Promise<{ id: string }>
 }
 
 async function getWorkerWithCredentials(workerId: string) {
@@ -21,7 +21,8 @@ async function getWorkerWithCredentials(workerId: string) {
 }
 
 export default async function WorkerCredentialsPage({ params }: PageProps) {
-    const worker = await getWorkerWithCredentials(params.id)
+    const { id } = await params
+    const worker = await getWorkerWithCredentials(id)
 
     if (!worker) {
         notFound()
