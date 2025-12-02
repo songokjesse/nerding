@@ -89,10 +89,18 @@ export function RosterCalendar({ initialShifts = [] }: RosterCalendarProps) {
     const eventStyleGetter = (event: any) => {
         let backgroundColor = '#3174ad'
         const status = event.resource.status
+        const validationStatus = event.resource.validationStatus
 
-        if (status === 'COMPLETED') backgroundColor = '#10b981'
-        if (status === 'CANCELLED') backgroundColor = '#ef4444'
-        if (status === 'IN_PROGRESS') backgroundColor = '#8b5cf6'
+        // Priority 1: Validation Errors (Red)
+        if (validationStatus === 'BLOCKED' || validationStatus === 'WARNING') {
+            backgroundColor = '#ef4444' // Red-500
+        }
+        // Priority 2: Shift Status
+        else {
+            if (status === 'COMPLETED') backgroundColor = '#10b981'
+            if (status === 'CANCELLED') backgroundColor = '#6b7280' // Gray for cancelled
+            if (status === 'IN_PROGRESS') backgroundColor = '#8b5cf6'
+        }
 
         return {
             style: {

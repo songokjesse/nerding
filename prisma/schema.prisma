@@ -26,9 +26,10 @@ model User {
   role          Role      @default(VIEWER)
   banned        Boolean   @default(false)
 
-  qualifications     String[]             @default([]) // Array of strings for skills/certs
-  preferences        Json? // Flexible JSON for worker preferences (e.g., preferred shifts, days off)
-  workerAvailability WorkerAvailability[] // Link to worker availability
+  qualifications      String[]             @default([]) // Array of strings for skills/certs
+  preferences         Json? // Flexible JSON for worker preferences (e.g., preferred shifts, days off)
+  maxFortnightlyHours Float? // Maximum hours allowed per fortnight (e.g., 48 for students)
+  workerAvailability  WorkerAvailability[] // Link to worker availability
 
   organisationMemberships OrganisationMember[]
   createdClients          Client[]

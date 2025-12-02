@@ -23,6 +23,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Trash2, Shield } from 'lucide-react'
 import Link from 'next/link'
 
+import { WorkerSettingsDialog } from '@/components/dashboard/worker-settings-dialog'
+
 interface Member {
     id: string
     role: OrgRole
@@ -31,6 +33,7 @@ interface Member {
         name: string
         email: string
         image: string | null
+        maxFortnightlyHours?: number | null
     }
 }
 
@@ -117,12 +120,21 @@ export function MemberTable({ members, currentUserRole, currentUserId }: MemberT
                                 )}
                             </TableCell>
                             <TableCell>
-                                <Link href={`/dashboard/rostering/workers/${member.user.id}/credentials`}>
-                                    <Button variant="outline" size="sm" className="gap-2">
-                                        <Shield className="w-4 h-4" />
-                                        Credentials
-                                    </Button>
-                                </Link>
+                                <div className="flex items-center gap-2">
+                                    <Link href={`/dashboard/rostering/workers/${member.user.id}/credentials`}>
+                                        <Button variant="outline" size="sm" className="gap-2">
+                                            <Shield className="w-4 h-4" />
+                                            Credentials
+                                        </Button>
+                                    </Link>
+                                    {canManage && (
+                                        <WorkerSettingsDialog
+                                            userId={member.user.id}
+                                            userName={member.user.name}
+                                            currentMaxHours={member.user.maxFortnightlyHours || null}
+                                        />
+                                    )}
+                                </div>
                             </TableCell>
                             <TableCell className="text-right">
                                 {canManage && member.user.id !== currentUserId && (

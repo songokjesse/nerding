@@ -490,7 +490,8 @@ export async function getShiftsForDateRange(startDate: Date, endDate: Date) {
             client: shift.shiftClientLink[0]?.client || { name: 'Unknown', ndisNumber: '' },
             worker: shift.shiftWorkerLink[0]?.worker || { name: 'Unknown', email: '' },
             clientId: shift.shiftClientLink[0]?.clientId || null,
-            workerId: shift.shiftWorkerLink[0]?.workerId || null
+            workerId: shift.shiftWorkerLink[0]?.workerId || null,
+            validationStatus: shift.validationStatus // Ensure this is passed explicitly if needed, though ...shift covers it
         }))
 
         return { shifts }
