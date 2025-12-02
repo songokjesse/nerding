@@ -18,7 +18,11 @@ export async function GET(
             where: {
                 id: shiftId,
                 organisationId: context!.organisationId,
-                workerId: context!.userId
+                shiftWorkerLink: {
+                    some: {
+                        workerId: context!.userId
+                    }
+                }
             }
         })
 
@@ -76,12 +80,21 @@ export async function POST(
             return errorResponse('Note text is required', 'INVALID_INPUT', 400)
         }
 
-        // Verify shift access
+        // Verify shift access and get client
         const shift = await prisma.shift.findFirst({
             where: {
                 id: shiftId,
                 organisationId: context!.organisationId,
-                workerId: context!.userId
+                shiftWorkerLink: {
+                    some: {
+                        workerId: context!.userId
+                    }
+                }
+            },
+            include: {
+                shiftClientLink: {
+                    take: 1
+                }
             }
         })
 
@@ -89,11 +102,16 @@ export async function POST(
             return errorResponse('Shift not found or access denied', 'NOT_FOUND', 404)
         }
 
+        const clientId = shift.shiftClientLink[0]?.clientId
+        if (!clientId) {
+            return errorResponse('No client associated with this shift', 'INVALID_STATE', 400)
+        }
+
         // Create progress note
         const note = await prisma.progressNote.create({
             data: {
                 organisationId: context!.organisationId,
-                clientId: shift.clientId,
+                clientId: clientId,
                 shiftId,
                 authorId: context!.userId,
                 noteText: noteText.trim(),

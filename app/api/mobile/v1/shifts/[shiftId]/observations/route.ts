@@ -19,7 +19,11 @@ export async function GET(
             where: {
                 id: shiftId,
                 organisationId: context!.organisationId,
-                workerId: context!.userId
+                shiftWorkerLink: {
+                    some: {
+                        workerId: context!.userId
+                    }
+                }
             }
         })
 
@@ -74,17 +78,31 @@ export async function POST(
             return errorResponse('Invalid module type', 'INVALID_INPUT', 400)
         }
 
-        // Verify shift access
+        // Verify shift access and get client
         const shift = await prisma.shift.findFirst({
             where: {
                 id: shiftId,
                 organisationId: context!.organisationId,
-                workerId: context!.userId
+                shiftWorkerLink: {
+                    some: {
+                        workerId: context!.userId
+                    }
+                }
+            },
+            include: {
+                shiftClientLink: {
+                    take: 1
+                }
             }
         })
 
         if (!shift) {
             return errorResponse('Shift not found or access denied', 'NOT_FOUND', 404)
+        }
+
+        const clientId = shift.shiftClientLink[0]?.clientId
+        if (!clientId) {
+            return errorResponse('No client associated with this shift', 'INVALID_STATE', 400)
         }
 
         // Find or create progress note for this shift
@@ -100,7 +118,7 @@ export async function POST(
             note = await prisma.progressNote.create({
                 data: {
                     organisationId: context!.organisationId,
-                    clientId: shift.clientId,
+                    clientId: clientId,
                     shiftId,
                     authorId: context!.userId,
                     noteText: "Clinical Observation Recorded"
