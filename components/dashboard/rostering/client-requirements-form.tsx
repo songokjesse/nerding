@@ -15,6 +15,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { WorkerSelector } from "./worker-selector"
 
 interface ClientRequirementsFormProps {
     clientId: string
@@ -53,6 +54,8 @@ export function ClientRequirementsForm({
     const [error, setError] = useState<string | null>(null)
     const [requiresHighIntensity, setRequiresHighIntensity] = useState(requirements?.requiresHighIntensity || false)
     const [requiresBSP, setRequiresBSP] = useState(requirements?.requiresBSP || false)
+    const [bannedWorkerIds, setBannedWorkerIds] = useState<string[]>(requirements?.bannedWorkerIds || [])
+    const [preferredWorkerIds, setPreferredWorkerIds] = useState<string[]>(requirements?.preferredWorkerIds || [])
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
@@ -171,6 +174,28 @@ export function ClientRequirementsForm({
                             </SelectContent>
                         </Select>
                     </div>
+
+                    <Separator />
+
+                    {/* Banned Workers */}
+                    <WorkerSelector
+                        label="Banned Workers"
+                        description="Workers who should not be assigned to this client"
+                        selectedWorkerIds={bannedWorkerIds}
+                        onChange={setBannedWorkerIds}
+                        variant="banned"
+                    />
+
+                    <Separator />
+
+                    {/* Preferred Workers */}
+                    <WorkerSelector
+                        label="Preferred Workers"
+                        description="Workers preferred for this client (for continuity of care)"
+                        selectedWorkerIds={preferredWorkerIds}
+                        onChange={setPreferredWorkerIds}
+                        variant="preferred"
+                    />
 
                     <Separator />
 
