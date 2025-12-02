@@ -278,7 +278,7 @@ export function RosterShiftForm({ clients, workers }: RosterShiftFormProps) {
             </form>
 
             {/* Override Dialog */}
-            <Dialog open={showOverrideDialog} onOpenChange={setShowOverrideDialog}>
+            <Dialog open={!!showOverrideDialog} onOpenChange={setShowOverrideDialog}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Override Warnings</DialogTitle>
