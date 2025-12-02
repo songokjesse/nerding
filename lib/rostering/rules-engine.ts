@@ -55,6 +55,7 @@ export interface WorkerData {
     email: string
     qualifications: string[]
     credentials?: WorkerCredentialData[]
+    maxFortnightlyHours?: number
 }
 
 export interface WorkerCredentialData {

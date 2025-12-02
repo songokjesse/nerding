@@ -40,7 +40,8 @@ export async function getMembers() {
                         id: true,
                         name: true,
                         email: true,
-                        image: true
+                        image: true,
+                        maxFortnightlyHours: true
                     }
                 }
             },
@@ -51,6 +52,41 @@ export async function getMembers() {
     } catch (error) {
         console.error('Failed to fetch members:', error)
         return { error: 'Failed to fetch members' }
+    }
+}
+
+export async function updateMemberSettings(userId: string, maxFortnightlyHours: number | null) {
+    try {
+        const { membership } = await getOrgMembership()
+
+        // Only ORG_ADMIN can update settings
+        if (membership.role !== OrgRole.ORG_ADMIN) {
+            return { error: 'Insufficient permissions' }
+        }
+
+        // Verify the target user is a member of the org
+        const targetMember = await prisma.organisationMember.findFirst({
+            where: {
+                userId: userId,
+                organisationId: membership.organisationId
+            }
+        })
+
+        if (!targetMember) {
+            return { error: 'Member not found' }
+        }
+
+        await prisma.user.update({
+            where: { id: userId },
+            data: { maxFortnightlyHours }
+        })
+
+        revalidatePath('/dashboard/members')
+        return { success: true }
+
+    } catch (error) {
+        console.error('Failed to update member settings:', error)
+        return { error: 'Failed to update member settings' }
     }
 }
 

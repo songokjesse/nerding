@@ -37,9 +37,79 @@ export async function validateOrganizationalRules(
     // Check workload distribution
     violations.push(...await checkWorkloadDistribution(shift, worker))
 
+    // Check max hours rule
+    violations.push(...await checkMaxHoursRule(shift, worker))
+
     // Check location proximity
     if (shift.location) {
         violations.push(...await checkLocationProximity(shift, worker))
+    }
+
+    return violations
+}
+
+/**
+ * Check if worker has exceeded their maximum fortnightly hours
+ */
+async function checkMaxHoursRule(shift: ShiftData, worker: WorkerData): Promise<RuleViolation[]> {
+    const violations: RuleViolation[] = []
+
+    if (!worker.maxFortnightlyHours) {
+        return violations
+    }
+
+    // Calculate fortnight range (standard 2-week cycle)
+    // For simplicity, we'll assume fortnights start on a fixed anchor date or just check a rolling 14-day window
+    // A rolling window is safer for compliance if pay cycles aren't strictly defined
+    const shiftDate = new Date(shift.startTime)
+    const fortnightStart = new Date(shiftDate)
+    fortnightStart.setDate(shiftDate.getDate() - 13) // Look back 13 days + current day = 14 days
+
+    // Fetch all shifts in this window
+    const shiftsInWindow = await prisma.shift.findMany({
+        where: {
+            shiftWorkerLink: {
+                some: { workerId: worker.id }
+            },
+            startTime: {
+                gte: fortnightStart,
+                lte: shiftDate
+            },
+            // Exclude the current shift if it's being updated (optional, but good for edits)
+            // id: { not: shift.id } 
+        },
+        select: {
+            startTime: true,
+            endTime: true
+        }
+    })
+
+    // Calculate total hours
+    let totalHours = 0
+    for (const s of shiftsInWindow) {
+        const duration = (s.endTime.getTime() - s.startTime.getTime()) / (1000 * 60 * 60)
+        totalHours += duration
+    }
+
+    // Add current shift duration
+    const currentShiftDuration = (shift.endTime.getTime() - shift.startTime.getTime()) / (1000 * 60 * 60)
+    totalHours += currentShiftDuration
+
+    if (totalHours > worker.maxFortnightlyHours) {
+        violations.push({
+            ruleId: 'ORG_004_MAX_HOURS',
+            severity: 'HARD', // Hard constraint as per user request ("restriction")
+            category: RuleCategory.ORGANIZATIONAL,
+            message: `Worker exceeds maximum fortnightly hours (${worker.maxFortnightlyHours}h). Current total: ${totalHours.toFixed(1)}h`,
+            affectedEntity: worker.id,
+            suggestedResolution: 'Assign a different worker or reduce shift duration',
+            details: {
+                maxHours: worker.maxFortnightlyHours,
+                currentTotal: totalHours,
+                windowStart: fortnightStart.toISOString(),
+                windowEnd: shiftDate.toISOString()
+            }
+        })
     }
 
     return violations
