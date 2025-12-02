@@ -38,6 +38,7 @@ model User {
   createdReports          MonthlyReport[]      @relation("ReportCreatedBy")
   reviewedReports         MonthlyReport[]      @relation("ReportReviewedBy")
   completedAppointments   Appointment[]        @relation("AppointmentCompletedBy")
+  workerCredentials       WorkerCredential[]   @relation("WorkerCredentials")
 
   @@unique([email])
   @@map("user")
@@ -48,6 +49,41 @@ enum Role {
   MANAGER
   EMPLOYEE
   VIEWER
+}
+
+enum CredentialType {
+  NDIS_WORKER_SCREENING
+  WORKING_WITH_CHILDREN
+  FIRST_AID_CPR
+  MANUAL_HANDLING
+  MEDICATION_COMPETENCY
+  HIGH_INTENSITY_CATHETER
+  HIGH_INTENSITY_PEG
+  HIGH_INTENSITY_DIABETES
+  HIGH_INTENSITY_SEIZURE
+  HIGH_INTENSITY_BEHAVIOUR
+  DRIVERS_LICENCE
+  VEHICLE_INSURANCE
+  PBS_TRAINING
+}
+
+model WorkerCredential {
+  id       String @id @default(cuid())
+  workerId String
+  worker   User   @relation("WorkerCredentials", fields: [workerId], references: [id], onDelete: Cascade)
+
+  type        CredentialType
+  issueDate   DateTime
+  expiryDate  DateTime?
+  documentUrl String?
+  verified    Boolean        @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workerId])
+  @@index([expiryDate])
+  @@map("worker_credential")
 }
 
 model Session {
@@ -161,11 +197,44 @@ model Client {
   monthlyReports MonthlyReport[]
 
   enabledModules ClientModule[]
-  site           Site?          @relation(fields: [siteId], references: [id])
+  site           Site?              @relation(fields: [siteId], references: [id])
   siteId         String?
   appointments   Appointment[]
+  requirements   ClientRequirement?
 
   @@map("client")
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model ClientRequirement {
+  id       String @id @default(cuid())
+  clientId String @unique
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  requiresHighIntensity Boolean  @default(false)
+  highIntensityTypes    String[] @default([]) // e.g., ["CATHETER", "PEG"]
+
+  genderPreference   String? // "MALE", "FEMALE", "ANY"
+  bannedWorkerIds    String[] @default([])
+  preferredWorkerIds String[] @default([])
+
+  requiresBSP       Boolean @default(false)
+  bspRequires2to1   Boolean @default(false)
+  bspRequiredGender String?
+  bspRequiresPBS    Boolean @default(false)
+
+  requiresTransfers Boolean   @default(false)
+  riskLevel         RiskLevel @default(LOW)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("client_requirement")
 }
 
 model Shift {
@@ -200,7 +269,33 @@ model Shift {
   progressNotes ProgressNote[]
   appointments  Appointment[]
 
+  // Rostering Rules Fields
+  shiftType         ShiftType @default(STANDARD)
+  isHighIntensity   Boolean   @default(false)
+  requiresTransport Boolean   @default(false)
+  travelDistance    Float?
+
+  validationStatus ValidationStatus @default(PENDING)
+  validationErrors Json?
+
   @@map("shift")
+}
+
+enum ShiftType {
+  STANDARD
+  EVENING
+  SATURDAY
+  SUNDAY
+  PUBLIC_HOLIDAY
+  SLEEPOVER
+  ACTIVE_OVERNIGHT
+}
+
+enum ValidationStatus {
+  PENDING
+  VALID
+  WARNING
+  BLOCKED
 }
 
 // New Join Table for Shift <-> Client (Many-to-Many)
@@ -362,19 +457,36 @@ model Observation {
 }
 
 model Site {
-  id             String        @id @default(uuid())
-  organisation   Organisation  @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  id             String            @id @default(uuid())
+  organisation   Organisation      @relation(fields: [organisationId], references: [id], onDelete: Cascade)
   organisationId String
   name           String
   address        String?
   clients        Client[]
   shifts         Shift[]
   appointments   Appointment[]
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  staffingRules  SILStaffingRule[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
 
   @@unique([organisationId, name])
   @@map("site")
+}
+
+model SILStaffingRule {
+  id     String @id @default(cuid())
+  siteId String
+  site   Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  timeOfDay        String // "MORNING", "DAY", "EVENING", "OVERNIGHT"
+  participantCount Int
+  requiredStaff    Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([siteId])
+  @@map("sil_staffing_rule")
 }
 
 model Appointment {
