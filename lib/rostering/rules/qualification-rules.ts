@@ -16,7 +16,7 @@ import { CredentialType } from '@/generated/prisma/client/enums'
 // ============================================================================
 
 const EXPIRY_WARNING_DAYS = 30
-const CRITICAL_CREDENTIALS = [
+const CRITICAL_CREDENTIALS: CredentialType[] = [
     CredentialType.NDIS_WORKER_SCREENING,
     CredentialType.WORKING_WITH_CHILDREN,
     CredentialType.FIRST_AID_CPR
