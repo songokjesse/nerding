@@ -399,6 +399,14 @@ export async function createRosterShift(prevState: any, formData: FormData) {
                     })) || []
                 }
 
+                // Debug logging
+                console.log('🔍 Validating shift for worker:', {
+                    workerId: workerData.id,
+                    workerName: workerData.name,
+                    maxFortnightlyHours: workerData.maxFortnightlyHours,
+                    shiftDuration: ((new Date(endTime).getTime() - new Date(startTime).getTime()) / (1000 * 60 * 60)).toFixed(2) + 'h'
+                })
+
                 // Map client data for validation
                 const clientData = {
                     id: client.id,
@@ -419,6 +427,14 @@ export async function createRosterShift(prevState: any, formData: FormData) {
                 }
 
                 const violations = await rulesEngine.validateShiftAssignment(shiftData, workerData, clientData)
+
+                // Debug logging
+                console.log('📋 Validation result:', {
+                    totalViolations: violations.length,
+                    hardViolations: violations.filter(v => v.severity === 'HARD').length,
+                    violations: violations.map(v => ({ ruleId: v.ruleId, severity: v.severity, message: v.message }))
+                })
+
                 allViolations.push(...violations)
             }
         }
