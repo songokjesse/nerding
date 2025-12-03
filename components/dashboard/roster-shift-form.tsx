@@ -127,11 +127,24 @@ export function RosterShiftForm({ clients, workers }: RosterShiftFormProps) {
         const result = await createRosterShift(null, formData)
 
         if (result?.error) {
-            toast({
-                title: "Error",
-                description: result.error,
-                variant: "destructive"
-            })
+            // Check if there are credential violations
+            if (result.violations && Array.isArray(result.violations)) {
+                const violationMessages = result.violations.map((v: any) =>
+                    `${v.message}${v.suggestedResolution ? ` - ${v.suggestedResolution}` : ''}`
+                ).join('\n')
+
+                toast({
+                    title: "Cannot Create Shift",
+                    description: violationMessages,
+                    variant: "destructive"
+                })
+            } else {
+                toast({
+                    title: "Error",
+                    description: result.error,
+                    variant: "destructive"
+                })
+            }
         } else {
             toast({
                 title: "Success",
