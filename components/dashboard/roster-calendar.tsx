@@ -5,10 +5,11 @@ import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop'
 import moment from 'moment'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.css'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { getShiftsForDateRange, updateShiftTimes } from '@/app/dashboard/shifts/actions'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ui/use-toast'
+import { getWorkerHoursMap, formatHoursDisplay } from '@/lib/rostering/calculate-worker-hours'
 
 const localizer = momentLocalizer(moment)
 const DnDCalendar = withDragAndDrop(Calendar as any)
@@ -21,8 +22,16 @@ export function RosterCalendar({ initialShifts = [] }: RosterCalendarProps) {
     const [events, setEvents] = useState<any[]>(initialShifts)
     const [view, setView] = useState<any>(Views.WEEK)
     const [date, setDate] = useState(new Date())
+    const [allShifts, setAllShifts] = useState<any[]>([])
+    const [workers, setWorkers] = useState<any[]>([])
     const router = useRouter()
     const { toast } = useToast()
+
+    // Calculate worker hours map
+    const workerHoursMap = useMemo(() => {
+        if (!allShifts.length || !workers.length) return {}
+        return getWorkerHoursMap(allShifts, workers)
+    }, [allShifts, workers])
 
     // Fetch shifts when view or date changes
     useEffect(() => {
@@ -40,16 +49,35 @@ export function RosterCalendar({ initialShifts = [] }: RosterCalendarProps) {
                 end = moment(date).endOf('day').toDate()
             }
 
-            const { shifts, error } = await getShiftsForDateRange(start, end)
+            const { shifts, workers: fetchedWorkers, error } = await getShiftsForDateRange(start, end)
             if (shifts) {
-                const mappedEvents = shifts.map((shift: any) => ({
-                    id: shift.id,
-                    title: `${shift.client?.name || 'Unknown Client'} - ${shift.worker?.name || 'Unassigned'}`,
-                    start: new Date(shift.startTime),
-                    end: new Date(shift.endTime),
-                    resource: shift,
-                    allDay: false
-                }))
+                setAllShifts(shifts)
+                setWorkers(fetchedWorkers || [])
+
+                const mappedEvents = shifts.map((shift: any) => {
+                    const workerId = shift.shiftWorkerLink?.[0]?.workerId
+                    const workerName = shift.worker?.name || 'Unassigned'
+                    const clientName = shift.client?.name || 'Unknown Client'
+
+                    // Get worker hours info
+                    const hoursInfo = workerId && fetchedWorkers ?
+                        getWorkerHoursMap(shifts, fetchedWorkers)[workerId] : null
+
+                    // Format title with hours
+                    let title = `${clientName} - ${workerName}`
+                    if (hoursInfo && hoursInfo.maxHours) {
+                        title += ` (${formatHoursDisplay(hoursInfo)})`
+                    }
+
+                    return {
+                        id: shift.id,
+                        title,
+                        start: new Date(shift.startTime),
+                        end: new Date(shift.endTime),
+                        resource: { ...shift, hoursInfo },
+                        allDay: false
+                    }
+                })
                 setEvents(mappedEvents)
             }
         }
@@ -91,12 +119,21 @@ export function RosterCalendar({ initialShifts = [] }: RosterCalendarProps) {
         let backgroundColor = '#3174ad'
         const status = event.resource.status
         const validationStatus = event.resource.validationStatus
+        const hoursInfo = event.resource.hoursInfo
 
-        // Priority 1: Validation Errors (Red)
-        if (validationStatus === 'BLOCKED' || validationStatus === 'WARNING') {
+        // Priority 1: Hour Limit Exceeded (Red)
+        if (hoursInfo && hoursInfo.exceeds) {
+            backgroundColor = '#ef4444' // Red-500 for exceeded hours
+        }
+        // Priority 2: Validation Warnings (Amber)
+        else if (validationStatus === 'WARNING') {
+            backgroundColor = '#f59e0b' // Amber-500
+        }
+        // Priority 3: Validation Blocked (Red)
+        else if (validationStatus === 'BLOCKED') {
             backgroundColor = '#ef4444' // Red-500
         }
-        // Priority 2: Shift Status
+        // Priority 4: Shift Status
         else {
             if (status === 'COMPLETED') backgroundColor = '#10b981'
             if (status === 'CANCELLED') backgroundColor = '#6b7280' // Gray for cancelled
