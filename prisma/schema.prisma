@@ -232,6 +232,26 @@ model ClientRequirement {
   requiresTransfers Boolean   @default(false)
   riskLevel         RiskLevel @default(LOW)
 
+  // NDIS Support Configuration
+  supportRatio             SupportRatio @default(ONE_TO_ONE)
+  requiresOvernightSupport Boolean      @default(false)
+  allowsSleepoverShifts    Boolean      @default(false)
+
+  // NDIS Funding
+  ndisAllocatedHours       Float?
+  ndisFundingPeriod        String? // e.g., "2024-01-01 to 2024-12-31"
+  ndisPlanStartDate        DateTime?
+  ndisPlanEndDate          DateTime?
+  hoursUsedThisPeriod      Float     @default(0)
+  hoursRemainingThisPeriod Float?
+  lastHoursUpdate          DateTime?
+
+  // SIL-Specific for Individual Residents
+  isSILResident           Boolean @default(false)
+  requiresConsistentStaff Boolean @default(false)
+  maxNewStaffPerMonth     Int?
+  preferredShiftTimes     Json? // e.g., {"morning": true, "afternoon": false}
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -276,6 +296,16 @@ model Shift {
   requiresTransport Boolean   @default(false)
   travelDistance    Float?
 
+  // NDIS Shift Configuration
+  shiftCategory ShiftCategory @default(ACTIVE)
+  supportRatio  SupportRatio  @default(ONE_TO_ONE)
+
+  // Billing & Costing
+  hourlyRate   Float?
+  totalCost    Float?
+  ndisLineItem String? // NDIS price guide line item
+  isBillable   Boolean @default(true)
+
   validationStatus ValidationStatus @default(PENDING)
   validationErrors Json?
 
@@ -284,12 +314,35 @@ model Shift {
 
 enum ShiftType {
   STANDARD
-  EVENING
-  SATURDAY
-  SUNDAY
+  WEEKEND
   PUBLIC_HOLIDAY
-  SLEEPOVER
-  ACTIVE_OVERNIGHT
+  EVENING
+  OVERNIGHT
+  SPLIT
+}
+
+enum SupportRatio {
+  ONE_TO_ONE // 1:1 - One worker per client
+  TWO_TO_ONE // 2:1 - Two workers per client
+  THREE_TO_ONE // 3:1 - Three workers per client
+  ONE_TO_TWO // 1:2 - One worker for two clients (group support)
+  ONE_TO_THREE // 1:3 - One worker for three clients
+  ONE_TO_FOUR // 1:4 - One worker for four clients (SIL overnight)
+}
+
+enum ShiftCategory {
+  ACTIVE // Standard active support shift
+  SLEEPOVER // Sleepover shift (worker sleeps on-site)
+  OVERNIGHT // Overnight active shift (awake overnight)
+  RESPITE // Respite care
+  TRANSPORT // Transport only
+}
+
+enum HouseType {
+  STANDARD // Regular SIL house
+  HIGH_NEEDS // Complex needs, higher ratios
+  RESPITE // Respite care house
+  TRANSITIONAL // Transitional accommodation
 }
 
 enum ValidationStatus {
@@ -458,20 +511,71 @@ model Observation {
 }
 
 model Site {
-  id             String            @id @default(uuid())
-  organisation   Organisation      @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  id             String       @id @default(uuid())
+  organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
   organisationId String
   name           String
   address        String?
-  clients        Client[]
-  shifts         Shift[]
-  appointments   Appointment[]
-  staffingRules  SILStaffingRule[]
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+
+  // SIL-specific fields
+  isSILHouse Boolean   @default(false)
+  houseType  HouseType @default(STANDARD)
+  capacity   Int? // Maximum residents
+
+  clients          Client[]
+  shifts           Shift[]
+  appointments     Appointment[]
+  staffingRules    SILStaffingRule[]
+  silConfiguration SILHouseConfiguration?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([organisationId, name])
   @@map("site")
+}
+
+model SILHouseConfiguration {
+  id     String @id @default(cuid())
+  siteId String @unique
+  site   Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  // Staffing Requirements
+  minimumStaffRatio      SupportRatio @default(ONE_TO_ONE)
+  requiresOvernightStaff Boolean      @default(true)
+  requires24x7Coverage   Boolean      @default(true)
+
+  // Shift Mix Requirements
+  minActiveHoursPerDay    Float   @default(16) // e.g., 16 hours active, 8 sleepover
+  maxSleepoverHoursPerDay Float   @default(8)
+  allowsSleepoverShifts   Boolean @default(true)
+
+  // Resident Count & Ratios
+  totalResidents        Int @default(1)
+  maxResidentsPerWorker Int @default(3)
+
+  // Gender Requirements
+  requiresMaleStaff   Boolean @default(false)
+  requiresFemaleStaff Boolean @default(false)
+  preferredGenderMix  String? // "MALE_ONLY", "FEMALE_ONLY", "MIXED", "ANY"
+
+  // Continuity Preferences
+  preferConsistentStaff Boolean @default(true)
+  maxNewStaffPerWeek    Int?    @default(2)
+  minShiftsBeforeAlone  Int?    @default(3) // Shadowing requirement
+
+  // Overnight Specific
+  overnightSupportRatio      SupportRatio? // Can differ from day ratio
+  allowsSingleOvernightStaff Boolean       @default(false)
+
+  // Emergency & On-Call
+  requiresOnCallBackup     Boolean @default(true)
+  emergencyContactRequired Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("sil_house_configuration")
 }
 
 model SILStaffingRule {
