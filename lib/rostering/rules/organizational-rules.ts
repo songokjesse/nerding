@@ -98,7 +98,7 @@ async function checkMaxHoursRule(shift: ShiftData, worker: WorkerData): Promise<
     if (totalHours > worker.maxFortnightlyHours) {
         violations.push({
             ruleId: 'ORG_004_MAX_HOURS',
-            severity: 'HARD', // Hard constraint as per user request ("restriction")
+            severity: 'SOFT', // Warning only - allow creation but flag for visual indication
             category: RuleCategory.ORGANIZATIONAL,
             message: `Worker exceeds maximum fortnightly hours (${worker.maxFortnightlyHours}h). Current total: ${totalHours.toFixed(1)}h`,
             affectedEntity: worker.id,

@@ -589,19 +589,34 @@ export async function getShiftsForDateRange(startDate: Date, endDate: Date) {
             orderBy: { startTime: 'asc' }
         })
 
+        // Get unique worker IDs from shifts
+        const workerIds = [...new Set(shiftsData.flatMap(s =>
+            s.shiftWorkerLink.map(sw => sw.workerId)
+        ))]
+
+        // Fetch workers with maxFortnightlyHours
+        const workers = await prisma.user.findMany({
+            where: { id: { in: workerIds } },
+            select: {
+                id: true,
+                name: true,
+                maxFortnightlyHours: true
+            }
+        })
+
         const shifts = shiftsData.map(shift => ({
             ...shift,
             client: shift.shiftClientLink[0]?.client || { name: 'Unknown', ndisNumber: '' },
             worker: shift.shiftWorkerLink[0]?.worker || { name: 'Unknown', email: '' },
             clientId: shift.shiftClientLink[0]?.clientId || null,
             workerId: shift.shiftWorkerLink[0]?.workerId || null,
-            validationStatus: shift.validationStatus // Ensure this is passed explicitly if needed, though ...shift covers it
+            validationStatus: shift.validationStatus
         }))
 
-        return { shifts }
+        return { shifts, workers }
     } catch (error) {
         console.error('Failed to fetch shifts for date range:', error)
-        return { error: 'Failed to fetch shifts' }
+        return { error: 'Failed to fetch shifts', shifts: [], workers: [] }
     }
 }
 
