@@ -389,6 +389,7 @@ export async function createRosterShift(prevState: any, formData: FormData) {
                     name: worker.user.name || '',
                     email: worker.user.email || '',
                     qualifications: worker.user.qualifications || [],
+                    maxFortnightlyHours: worker.user.maxFortnightlyHours || undefined,
                     credentials: worker.user.workerCredentials?.map(c => ({
                         id: c.id,
                         type: c.type,
