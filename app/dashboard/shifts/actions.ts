@@ -332,11 +332,14 @@ export async function createRosterShift(prevState: any, formData: FormData) {
 
         const { clientIds, workerIds, startTime, endTime, serviceType, location } = validated.data
 
-        // Verify clients
+        // Verify clients and fetch requirements
         const clients = await prisma.client.findMany({
             where: {
                 id: { in: clientIds },
                 organisationId: membership.organisationId
+            },
+            include: {
+                requirements: true
             }
         })
 
@@ -344,17 +347,100 @@ export async function createRosterShift(prevState: any, formData: FormData) {
             return { error: 'One or more clients not found' }
         }
 
-        // Verify workers
+        // Verify workers and fetch credentials
         const workers = await prisma.organisationMember.findMany({
             where: {
                 userId: { in: workerIds },
                 organisationId: membership.organisationId
+            },
+            include: {
+                user: {
+                    include: {
+                        workerCredentials: true
+                    }
+                }
             }
         })
 
         if (workers.length !== workerIds.length) {
             return { error: 'One or more workers not found' }
         }
+
+        // Validate credentials for each worker-client pairing
+        const { RosteringRulesEngine } = await import('@/lib/rostering/rules-engine')
+        const rulesEngine = new RosteringRulesEngine()
+        const allViolations: any[] = []
+
+        for (const worker of workers) {
+            for (const client of clients) {
+                const shiftData = {
+                    startTime: new Date(startTime),
+                    endTime: new Date(endTime),
+                    shiftType: 'STANDARD' as any,
+                    isHighIntensity: client.requirements?.requiresHighIntensity || false,
+                    requiresTransport: false,
+                    location: location || undefined,
+                    serviceType: serviceType || undefined
+                }
+
+                // Map worker data for validation
+                const workerData = {
+                    id: worker.userId,
+                    name: worker.user.name || '',
+                    email: worker.user.email || '',
+                    qualifications: worker.user.qualifications || [],
+                    credentials: worker.user.workerCredentials?.map(c => ({
+                        id: c.id,
+                        type: c.type,
+                        issueDate: c.issueDate,
+                        expiryDate: c.expiryDate || undefined,
+                        verified: c.verified
+                    })) || []
+                }
+
+                // Map client data for validation
+                const clientData = {
+                    id: client.id,
+                    name: client.name,
+                    requirements: client.requirements ? {
+                        requiresHighIntensity: client.requirements.requiresHighIntensity,
+                        highIntensityTypes: client.requirements.highIntensityTypes || [],
+                        genderPreference: client.requirements.genderPreference || undefined,
+                        bannedWorkerIds: client.requirements.bannedWorkerIds || [],
+                        preferredWorkerIds: client.requirements.preferredWorkerIds || [],
+                        requiresBSP: client.requirements.requiresBSP,
+                        bspRequires2to1: client.requirements.bspRequires2to1,
+                        bspRequiredGender: client.requirements.bspRequiredGender || undefined,
+                        bspRequiresPBS: client.requirements.bspRequiresPBS,
+                        requiresTransfers: client.requirements.requiresTransfers,
+                        riskLevel: client.requirements.riskLevel
+                    } : undefined
+                }
+
+                const violations = await rulesEngine.validateShiftAssignment(shiftData, workerData, clientData)
+                allViolations.push(...violations)
+            }
+        }
+
+        // Check for HARD violations (blocking)
+        const hardViolations = allViolations.filter(v => v.severity === 'HARD')
+
+        if (hardViolations.length > 0) {
+            // Return first hard violation with details
+            const violation = hardViolations[0]
+            return {
+                error: violation.message,
+                violations: hardViolations.map(v => ({
+                    message: v.message,
+                    suggestedResolution: v.suggestedResolution,
+                    category: v.category
+                }))
+            }
+        }
+
+        // Determine validation status
+        const hasWarnings = allViolations.some(v => v.severity === 'SOFT')
+        const validationStatus = hasWarnings ? 'WARNING' : 'VALID'
 
         // Create shift with M-N relationships
         await prisma.shift.create({
@@ -377,6 +463,7 @@ export async function createRosterShift(prevState: any, formData: FormData) {
                 serviceType: serviceType || null,
                 location: location || null,
                 status: ShiftStatus.PLANNED,
+                validationStatus: validationStatus as any,
                 createdById: session.user.id
             }
         })
