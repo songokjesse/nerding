@@ -25,13 +25,24 @@ export function ShiftForm({ clients, workers }: ShiftFormProps) {
     const defaultStart = tomorrow.toISOString().slice(0, 16)
     const defaultEnd = new Date(tomorrow.getTime() + 2 * 60 * 60 * 1000).toISOString().slice(0, 16)
 
+    const handleSubmit = (formData: FormData) => {
+        // Fix timezone: Convert local datetime-local string to ISO string (UTC)
+        const startTime = formData.get('startTime') as string
+        const endTime = formData.get('endTime') as string
+
+        if (startTime) formData.set('startTime', new Date(startTime).toISOString())
+        if (endTime) formData.set('endTime', new Date(endTime).toISOString())
+
+        formAction(formData)
+    }
+
     return (
         <Card className="max-w-2xl mx-auto">
             <CardHeader>
                 <CardTitle>Schedule New Shift</CardTitle>
             </CardHeader>
             <CardContent>
-                <form action={formAction} className="space-y-4">
+                <form action={handleSubmit} className="space-y-4">
                     {/* Client Selection */}
                     <div className="space-y-2">
                         <Label htmlFor="clientId">Client *</Label>

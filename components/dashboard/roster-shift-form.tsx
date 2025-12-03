@@ -114,6 +114,12 @@ export function RosterShiftForm({ clients, workers }: RosterShiftFormProps) {
         setIsLoading(true)
 
         const formData = new FormData(event.currentTarget)
+
+        // Fix timezone: Convert local datetime-local string to ISO string (UTC)
+        // This ensures the server receives the correct absolute time regardless of server timezone
+        if (startTime) formData.set('startTime', new Date(startTime).toISOString())
+        if (endTime) formData.set('endTime', new Date(endTime).toISOString())
+
         if (overrideReason) {
             formData.append('overrideReason', overrideReason)
         }
