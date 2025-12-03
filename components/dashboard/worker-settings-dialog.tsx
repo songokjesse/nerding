@@ -44,7 +44,8 @@ export function WorkerSettingsDialog({ userId, userName, currentMaxHours }: Work
             } else {
                 toast({
                     title: "Settings updated",
-                    description: `Settings for ${userName} have been updated.`
+                    description: `Max hours for ${userName} set to ${hours || 'unlimited'}.`,
+                    variant: "success"
                 })
                 setOpen(false)
             }

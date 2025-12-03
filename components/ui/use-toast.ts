@@ -1,9 +1,17 @@
+import { toast as sonnerToast } from 'sonner'
+
 export const useToast = () => ({
-    toast: ({ title, description, variant }: any) => {
-        console.log(`Toast: ${title} - ${description} (${variant})`)
+    toast: ({ title, description, variant }: {
+        title: string
+        description?: string
+        variant?: 'default' | 'destructive' | 'success'
+    }) => {
         if (variant === 'destructive') {
-            // Fallback for error visibility
-            // alert(`${title}: ${description}`)
+            sonnerToast.error(title, { description })
+        } else if (variant === 'success') {
+            sonnerToast.success(title, { description })
+        } else {
+            sonnerToast(title, { description })
         }
     }
 })

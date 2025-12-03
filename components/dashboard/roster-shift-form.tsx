@@ -135,7 +135,8 @@ export function RosterShiftForm({ clients, workers }: RosterShiftFormProps) {
         } else {
             toast({
                 title: "Success",
-                description: "Shift created successfully"
+                description: "Shift created successfully",
+                variant: "success"
             })
             router.push("/dashboard/rostering/calendar")
         }

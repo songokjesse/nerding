@@ -77,7 +77,8 @@ export function RosterCalendar({ initialShifts = [] }: RosterCalendarProps) {
         } else {
             toast({
                 title: "Shift updated",
-                description: "Shift time has been updated successfully."
+                description: "Shift time has been updated successfully.",
+                variant: "success"
             })
         }
     }
