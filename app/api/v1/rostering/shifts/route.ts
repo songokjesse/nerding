@@ -3,6 +3,8 @@ import { authenticateRequest, successResponse, errorResponse } from '@/lib/api-a
 import prisma from '@/lib/prisma'
 import { ShiftStatus } from '@/generated/prisma/client/enums'
 import type { CreateShiftDto, ShiftResponseDto } from '@/lib/rostering/types'
+import { updateClientHoursTracking } from '@/lib/ndis/hour-tracking'
+import { rulesEngine } from '@/lib/rostering/rules-engine'
 
 /**
  * GET /api/v1/rostering/shifts
@@ -226,6 +228,90 @@ export async function POST(request: NextRequest) {
             }
         }
 
+        // Optional: Validate shift before creation
+        let validationWarnings: string[] = []
+        if (body.validate !== false) { // Default to true
+            // Get all clients with requirements for validation
+            const clientsWithRequirements = body.clientIds && body.clientIds.length > 0
+                ? await prisma.client.findMany({
+                    where: {
+                        id: { in: body.clientIds },
+                        organisationId: context!.organisationId
+                    },
+                    include: { requirements: true }
+                })
+                : []
+
+            // Validate each worker-client pairing
+            for (const workerId of body.workerIds) {
+                const worker = workers.find(w => w.id === workerId)
+                if (!worker) continue
+
+                const workerData = {
+                    id: worker.id,
+                    name: worker.name,
+                    email: worker.email,
+                    qualifications: worker.qualifications,
+                    maxFortnightlyHours: worker.maxFortnightlyHours || undefined
+                }
+
+                for (const client of clientsWithRequirements) {
+                    if (!client.requirements) continue
+
+                    const clientData = {
+                        id: client.id,
+                        name: client.name,
+                        requirements: {
+                            requiresHighIntensity: client.requirements.requiresHighIntensity,
+                            highIntensityTypes: client.requirements.highIntensityTypes,
+                            genderPreference: client.requirements.genderPreference || undefined,
+                            bannedWorkerIds: client.requirements.bannedWorkerIds,
+                            preferredWorkerIds: client.requirements.preferredWorkerIds,
+                            requiresBSP: client.requirements.requiresBSP,
+                            bspRequires2to1: client.requirements.bspRequires2to1,
+                            bspRequiredGender: client.requirements.bspRequiredGender || undefined,
+                            bspRequiresPBS: client.requirements.bspRequiresPBS,
+                            requiresTransfers: client.requirements.requiresTransfers,
+                            riskLevel: client.requirements.riskLevel
+                        }
+                    }
+
+                    const shiftData = {
+                        startTime,
+                        endTime,
+                        shiftType: body.shiftType || 'STANDARD' as any,
+                        isHighIntensity: client.requirements.requiresHighIntensity,
+                        requiresTransport: body.requiresTransport || false,
+                        travelDistance: body.travelDistance,
+                        location: body.location,
+                        serviceType: body.serviceType,
+                        siteId: body.siteId
+                    }
+
+                    const violations = await rulesEngine.validateShiftAssignment(
+                        shiftData,
+                        workerData,
+                        clientData
+                    )
+
+                    // Collect soft violations as warnings
+                    const softViolations = violations.filter(v => v.severity === 'SOFT')
+                    validationWarnings.push(...softViolations.map(v => v.message))
+
+                    // Block on hard violations
+                    const hardViolations = violations.filter(v => v.severity === 'HARD')
+                    if (hardViolations.length > 0) {
+                        console.error('Shift validation failed:', hardViolations)
+                        return errorResponse(
+                            `Shift validation failed: ${hardViolations.map(v => v.message).join(', ')}`,
+                            'VALIDATION_ERROR',
+                            400
+                        )
+                    }
+                }
+            }
+        }
+
         // Create shift with workers and clients
         const shift = await prisma.shift.create({
             data: {
@@ -237,6 +323,12 @@ export async function POST(request: NextRequest) {
                 location: body.location,
                 siteId: body.siteId,
                 createdById: context!.userId,
+                shiftType: body.shiftType || 'STANDARD' as any,
+                isHighIntensity: body.isHighIntensity || false,
+                requiresTransport: body.requiresTransport || false,
+                travelDistance: body.travelDistance,
+                shiftCategory: body.shiftCategory || 'ACTIVE' as any,
+                supportRatio: body.supportRatio || 'ONE_TO_ONE' as any,
                 // Create worker relationships
                 shiftWorkerLink: {
                     create: body.workerIds.map(workerId => ({
@@ -290,6 +382,20 @@ export async function POST(request: NextRequest) {
             }
         })
 
+        // Update NDIS hour tracking for all clients
+        if (body.clientIds && body.clientIds.length > 0) {
+            await Promise.all(
+                body.clientIds.map(async (clientId) => {
+                    try {
+                        await updateClientHoursTracking(clientId)
+                    } catch (err) {
+                        console.error(`Failed to update hours for client ${clientId}:`, err)
+                        // Don't fail the request if hour tracking update fails
+                    }
+                })
+            )
+        }
+
         const response: ShiftResponseDto = {
             id: shift.id,
             startTime: shift.startTime.toISOString(),
@@ -314,7 +420,15 @@ export async function POST(request: NextRequest) {
             clockOutTime: null
         }
 
-        return successResponse({ shift: response }, 201)
+        const responseData: any = { shift: response }
+
+        // Include validation warnings if any
+        if (validationWarnings.length > 0) {
+            responseData.warnings = validationWarnings
+            responseData.message = `Shift created successfully with ${validationWarnings.length} warning(s)`
+        }
+
+        return successResponse(responseData, 201)
     } catch (err) {
         console.error('Error creating shift:', err)
         return errorResponse('Failed to create shift', 'INTERNAL_ERROR', 500)
