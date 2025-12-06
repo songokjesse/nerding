@@ -6,8 +6,22 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Switch } from "@/components/ui/switch"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 import { useToast } from "@/components/ui/use-toast"
 import { useRouter } from "next/navigation"
+import { ChevronDown } from "lucide-react"
 import { ShiftValidationIndicator } from "./rostering/shift-validation-indicator"
 import { ValidationFeedback } from "./rostering/validation-feedback"
 import {
@@ -55,6 +69,15 @@ export function RosterShiftForm({ clients, workers }: RosterShiftFormProps) {
     const [isValidating, setIsValidating] = useState(false)
     const [showOverrideDialog, setShowOverrideDialog] = useState(false)
     const [overrideReason, setOverrideReason] = useState("")
+
+    // NDIS Configuration State
+    const [ndisConfigOpen, setNdisConfigOpen] = useState(false)
+    const [shiftType, setShiftType] = useState("")
+    const [shiftCategory, setShiftCategory] = useState("")
+    const [supportRatio, setSupportRatio] = useState("")
+    const [isHighIntensity, setIsHighIntensity] = useState(false)
+    const [requiresTransport, setRequiresTransport] = useState(false)
+    const [travelDistance, setTravelDistance] = useState("")
 
     // Real-time validation
     useEffect(() => {
@@ -283,6 +306,120 @@ export function RosterShiftForm({ clients, workers }: RosterShiftFormProps) {
                     <Label htmlFor="location">Location (Optional)</Label>
                     <Input id="location" name="location" placeholder="e.g. Client Home" />
                 </div>
+
+                {/* NDIS Configuration Section */}
+                <Collapsible open={ndisConfigOpen} onOpenChange={setNdisConfigOpen} className="border rounded-lg">
+                    <CollapsibleTrigger asChild>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            className="w-full flex items-center justify-between p-4 hover:bg-accent"
+                        >
+                            <span className="font-medium">NDIS Configuration (Optional)</span>
+                            <ChevronDown className={`h-4 w-4 transition-transform ${ndisConfigOpen ? 'rotate-180' : ''}`} />
+                        </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="p-4 space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Shift Type</Label>
+                                <Select value={shiftType} onValueChange={setShiftType}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="STANDARD">Standard</SelectItem>
+                                        <SelectItem value="WEEKEND">Weekend</SelectItem>
+                                        <SelectItem value="PUBLIC_HOLIDAY">Public Holiday</SelectItem>
+                                        <SelectItem value="EVENING">Evening</SelectItem>
+                                        <SelectItem value="OVERNIGHT">Overnight</SelectItem>
+                                        <SelectItem value="SPLIT">Split Shift</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <input type="hidden" name="shiftType" value={shiftType} />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label>Shift Category</Label>
+                                <Select value={shiftCategory} onValueChange={setShiftCategory}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select category" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="ACTIVE">Active Support</SelectItem>
+                                        <SelectItem value="SLEEPOVER">Sleepover</SelectItem>
+                                        <SelectItem value="OVERNIGHT">Overnight Active</SelectItem>
+                                        <SelectItem value="RESPITE">Respite Care</SelectItem>
+                                        <SelectItem value="TRANSPORT">Transport Only</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <input type="hidden" name="shiftCategory" value={shiftCategory} />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Support Ratio</Label>
+                            <Select value={supportRatio} onValueChange={setSupportRatio}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select ratio" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="ONE_TO_ONE">1:1 - One worker per client</SelectItem>
+                                    <SelectItem value="TWO_TO_ONE">2:1 - Two workers per client</SelectItem>
+                                    <SelectItem value="THREE_TO_ONE">3:1 - Three workers per client</SelectItem>
+                                    <SelectItem value="ONE_TO_TWO">1:2 - One worker for two clients</SelectItem>
+                                    <SelectItem value="ONE_TO_THREE">1:3 - One worker for three clients</SelectItem>
+                                    <SelectItem value="ONE_TO_FOUR">1:4 - One worker for four clients</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <input type="hidden" name="supportRatio" value={supportRatio} />
+                        </div>
+
+                        <div className="flex items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                                <Label className="text-base">High Intensity Support</Label>
+                                <p className="text-sm text-muted-foreground">
+                                    Requires specialized training or credentials
+                                </p>
+                            </div>
+                            <Switch
+                                checked={isHighIntensity}
+                                onCheckedChange={setIsHighIntensity}
+                            />
+                            <input type="hidden" name="isHighIntensity" value={isHighIntensity ? 'true' : 'false'} />
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between rounded-lg border p-4">
+                                <div className="space-y-0.5">
+                                    <Label className="text-base">Requires Transport</Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        Worker needs to transport client
+                                    </p>
+                                </div>
+                                <Switch
+                                    checked={requiresTransport}
+                                    onCheckedChange={setRequiresTransport}
+                                />
+                                <input type="hidden" name="requiresTransport" value={requiresTransport ? 'true' : 'false'} />
+                            </div>
+
+                            {requiresTransport && (
+                                <div className="space-y-2 ml-4">
+                                    <Label htmlFor="travelDistance">Travel Distance (km)</Label>
+                                    <Input
+                                        id="travelDistance"
+                                        name="travelDistance"
+                                        type="number"
+                                        placeholder="e.g., 15"
+                                        value={travelDistance}
+                                        onChange={(e) => setTravelDistance(e.target.value)}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    </CollapsibleContent>
+                </Collapsible>
 
                 <div className="flex justify-end gap-4">
                     <Button type="button" variant="outline" onClick={() => router.back()}>
