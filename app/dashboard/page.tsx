@@ -1,9 +1,10 @@
-import { getDashboardData } from './actions'
+import { getDashboardData, getClientsApproachingLimits } from './actions'
 import { StatCard } from '@/components/dashboard/stat-card'
 import { RecentClients } from '@/components/dashboard/recent-clients'
 import { UpcomingShifts } from '@/components/dashboard/upcoming-shifts'
 import { RecentActivity } from '@/components/dashboard/recent-activity'
 import { QuickActions } from '@/components/dashboard/quick-actions'
+import { HourUtilizationWidget } from '@/components/dashboard/hour-utilization-widget'
 import { Users, UserCheck, Calendar, Building2 } from 'lucide-react'
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
@@ -18,7 +19,10 @@ export default async function DashboardPage() {
     }
 
     // Fetch dashboard data
-    const data = await getDashboardData()
+    const [data, hourLimitsData] = await Promise.all([
+        getDashboardData(),
+        getClientsApproachingLimits()
+    ])
 
     if ('error' in data) {
         return (
@@ -83,6 +87,9 @@ export default async function DashboardPage() {
                 {/* Left Column - 2/3 width */}
                 <div className="lg:col-span-2 space-y-6">
                     <RecentClients clients={recentClients} />
+                    {hourLimitsData.clients.length > 0 && (
+                        <HourUtilizationWidget clients={hourLimitsData.clients} />
+                    )}
                     <UpcomingShifts shifts={upcomingShifts} />
                 </div>
 

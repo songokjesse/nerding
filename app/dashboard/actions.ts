@@ -148,3 +148,67 @@ function getEndOfWeek() {
     const diff = now.getDate() + (6 - dayOfWeek)
     return new Date(now.setDate(diff))
 }
+
+/**
+ * Get clients approaching their NDIS hour limits
+ * Returns clients who have used 70% or more of their allocated hours
+ */
+export async function getClientsApproachingLimits() {
+    try {
+        const { membership } = await getOrgMembership()
+        const orgId = membership.organisationId
+
+        // Get all clients with NDIS configuration
+        const clients = await prisma.client.findMany({
+            where: {
+                organisationId: orgId,
+                requirements: {
+                    ndisAllocatedHours: { not: null, gt: 0 }
+                }
+            },
+            select: {
+                id: true,
+                name: true,
+                requirements: {
+                    select: {
+                        ndisAllocatedHours: true,
+                        hoursUsedThisPeriod: true,
+                        hoursRemainingThisPeriod: true,
+                        ndisPlanEndDate: true
+                    }
+                }
+            }
+        })
+
+        // Filter and calculate percentages
+        const clientsWithPercentages = clients
+            .filter(client => client.requirements !== null)
+            .map(client => {
+                const req = client.requirements!
+                const allocatedHours = req.ndisAllocatedHours || 0
+                const usedHours = req.hoursUsedThisPeriod || 0
+                const remainingHours = req.hoursRemainingThisPeriod ?? (allocatedHours - usedHours)
+                const percentageUsed = allocatedHours > 0 ? (usedHours / allocatedHours) * 100 : 0
+
+                return {
+                    clientId: client.id,
+                    clientName: client.name,
+                    allocatedHours,
+                    usedHours,
+                    remainingHours,
+                    percentageUsed: Math.round(percentageUsed),
+                    planEndDate: req.ndisPlanEndDate?.toISOString() || null,
+                    isApproachingLimit: percentageUsed >= 70,
+                    isExceeded: usedHours > allocatedHours
+                }
+            })
+            .filter(client => client.isApproachingLimit || client.isExceeded)
+            .sort((a, b) => b.percentageUsed - a.percentageUsed)
+            .slice(0, 5) // Top 5 clients
+
+        return { clients: clientsWithPercentages }
+    } catch (error) {
+        console.error('Failed to fetch clients approaching limits:', error)
+        return { clients: [] }
+    }
+}
