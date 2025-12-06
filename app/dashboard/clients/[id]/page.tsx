@@ -71,6 +71,33 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
                         </CardContent>
                     </Card>
 
+                    {/* NDIS Configuration Card */}
+                    <Card>
+                        <CardHeader>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Settings className="h-5 w-5" />
+                                        NDIS Configuration
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Manage NDIS funding and support configuration
+                                    </CardDescription>
+                                </div>
+                                <Link href={`/dashboard/clients/${id}/ndis-config`}>
+                                    <Button variant="outline" size="sm">
+                                        Configure
+                                    </Button>
+                                </Link>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-sm text-muted-foreground">
+                                Set support ratios, allocated hours, funding periods, and SIL preferences for NDIS plan management.
+                            </p>
+                        </CardContent>
+                    </Card>
+
                     <ClientModuleConfig
                         clientId={clientResult.client.id}
                         modules={modules}
