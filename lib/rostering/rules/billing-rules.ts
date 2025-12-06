@@ -18,14 +18,14 @@ import { ShiftType } from '@/generated/prisma/client/enums'
 
 const BASE_HOURLY_RATE = 32.50 // Example base rate for Level 2 support worker
 
-const PENALTY_RATES = {
+// Shift type multipliers for billing
+const SHIFT_TYPE_MULTIPLIERS: Record<ShiftType, number> = {
     [ShiftType.STANDARD]: 1.0,
     [ShiftType.EVENING]: 1.15,      // 15% loading for evening (after 6pm)
-    [ShiftType.SATURDAY]: 1.5,      // 50% loading for Saturday
-    [ShiftType.SUNDAY]: 1.75,       // 75% loading for Sunday
+    [ShiftType.WEEKEND]: 1.5,       // 50% loading for weekend
     [ShiftType.PUBLIC_HOLIDAY]: 2.5, // 150% loading for public holidays
-    [ShiftType.SLEEPOVER]: 0.3,     // Sleepover allowance (not hourly rate)
-    [ShiftType.ACTIVE_OVERNIGHT]: 1.5 // 50% loading for active overnight
+    [ShiftType.OVERNIGHT]: 1.75,    // 75% loading for overnight
+    [ShiftType.SPLIT]: 1.0,         // Standard rate for split shifts
 }
 
 const OVERTIME_RATE = 1.5 // Time and a half for overtime
@@ -45,7 +45,7 @@ export function calculateCost(shift: ShiftData): CostBreakdown {
     const durationHours = (shift.endTime.getTime() - shift.startTime.getTime()) / (1000 * 60 * 60)
 
     // Get penalty multiplier based on shift type
-    const penaltyMultiplier = PENALTY_RATES[shift.shiftType] || 1.0
+    const penaltyMultiplier = SHIFT_TYPE_MULTIPLIERS[shift.shiftType] || 1.0
 
     // Calculate standard hours and overtime
     const { standardHours, overtimeHours } = calculateOvertimeBreakdown(durationHours, shift.shiftType)
@@ -77,8 +77,8 @@ function calculateOvertimeBreakdown(
     totalHours: number,
     shiftType: ShiftType
 ): { standardHours: number; overtimeHours: number } {
-    // Sleepover shifts don't have traditional overtime
-    if (shiftType === ShiftType.SLEEPOVER) {
+    // Overnight shifts don't have traditional overtime
+    if (shiftType === ShiftType.OVERNIGHT) {
         return {
             standardHours: totalHours,
             overtimeHours: 0
@@ -123,24 +123,14 @@ export function classifyShiftType(startTime: Date, endTime: Date, isPublicHolida
     const dayOfWeek = startTime.getDay()
     const startHour = startTime.getHours()
 
-    // Check if it's a sleepover (typically 10pm - 8am with sleep time)
-    const durationHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60)
-    if (startHour >= 22 && durationHours >= 8) {
-        return ShiftType.SLEEPOVER
-    }
-
-    // Check if it's active overnight
+    // Check if it's overnight (10pm - 6am)
     if (startHour >= 22 || startHour < 6) {
-        return ShiftType.ACTIVE_OVERNIGHT
+        return ShiftType.OVERNIGHT
     }
 
-    // Check day of week
-    if (dayOfWeek === 0) { // Sunday
-        return ShiftType.SUNDAY
-    }
-
-    if (dayOfWeek === 6) { // Saturday
-        return ShiftType.SATURDAY
+    // Check if weekend (Saturday or Sunday)
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+        return ShiftType.WEEKEND
     }
 
     // Check if evening (after 6pm on weekday)
@@ -207,7 +197,7 @@ export function estimateMonthlyClientCost(
     const totalShifts = shiftsPerWeek * weeksPerMonth
     const totalHours = totalShifts * averageShiftHours
 
-    const penaltyMultiplier = PENALTY_RATES[shiftType] || 1.0
+    const penaltyMultiplier = SHIFT_TYPE_MULTIPLIERS[shiftType] || 1.0
     const costPerHour = BASE_HOURLY_RATE * penaltyMultiplier
 
     return totalHours * costPerHour
