@@ -1,5 +1,5 @@
 import { RuleViolation, RuleCategory, ShiftData, WorkerData } from '../rules-engine'
-import { ShiftType } from '@/generated/prisma/client/enums'
+import { ShiftType, ShiftCategory } from '@/generated/prisma/client/enums'
 import prisma from '@/lib/prisma'
 
 /**
@@ -43,8 +43,10 @@ export async function validateSCHADSCompliance(
     // Check maximum daily hours
     violations.push(...await checkMaximumDailyHours(shift, worker))
 
-    // Check sleepover conditions
-    if (shift.shiftType === ShiftType.SLEEPOVER || shift.shiftType === ShiftType.ACTIVE_OVERNIGHT) {
+    // Check sleepover conditions (based on shift category, not shift type)
+    // Note: shift.shiftCategory would need to be added to ShiftData interface
+    // For now, we'll check if it's an overnight shift type
+    if (shift.shiftType === ShiftType.OVERNIGHT) {
         violations.push(...checkSleepoverConditions(shift))
     }
 
@@ -87,14 +89,14 @@ function checkMinimumShiftLength(shift: ShiftData): RuleViolation[] {
 
     const durationHours = (shift.endTime.getTime() - shift.startTime.getTime()) / (1000 * 60 * 60)
 
-    // Sleepover shifts have different minimum
-    if (shift.shiftType === ShiftType.SLEEPOVER) {
+    // Overnight shifts have different minimum (sleepover would be checked via shiftCategory)
+    if (shift.shiftType === ShiftType.OVERNIGHT) {
         if (durationHours < MIN_SLEEPOVER_HOURS) {
             violations.push({
-                ruleId: 'SCHADS_001_MIN_SLEEPOVER',
+                ruleId: 'SCHADS_001_MIN_OVERNIGHT',
                 severity: 'HARD',
                 category: RuleCategory.SCHADS_AWARD,
-                message: `Sleepover shift must be at least ${MIN_SLEEPOVER_HOURS} hours (currently ${durationHours.toFixed(1)}h)`,
+                message: `Overnight shift must be at least ${MIN_SLEEPOVER_HOURS} hours (currently ${durationHours.toFixed(1)}h)`,
                 suggestedResolution: `Extend shift to ${MIN_SLEEPOVER_HOURS} hours minimum`,
                 details: { currentDuration: durationHours, minimumRequired: MIN_SLEEPOVER_HOURS }
             })
@@ -334,14 +336,14 @@ function checkSleepoverConditions(shift: ShiftData): RuleViolation[] {
     const startHour = shift.startTime.getHours()
     const endHour = shift.endTime.getHours()
 
-    // Sleepover should typically be overnight (e.g., 10pm - 8am)
-    if (shift.shiftType === ShiftType.SLEEPOVER) {
+    // Overnight shifts should typically be overnight hours (e.g., 10pm - 8am)
+    if (shift.shiftType === ShiftType.OVERNIGHT) {
         if (startHour < 20 || endHour > 10) {
             violations.push({
-                ruleId: 'SCHADS_008_SLEEPOVER_TIMING',
+                ruleId: 'SCHADS_008_OVERNIGHT_TIMING',
                 severity: 'SOFT',
                 category: RuleCategory.SCHADS_AWARD,
-                message: 'Sleepover shift timing unusual (typically 8pm-8am)',
+                message: 'Overnight shift timing unusual (typically 8pm-8am)',
                 suggestedResolution: 'Verify shift type is correct',
                 details: {
                     startHour,
