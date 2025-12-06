@@ -14,6 +14,15 @@ export interface CreateShiftDto {
     serviceType?: string
     location?: string
     status?: ShiftStatus
+    // NDIS-specific fields
+    shiftType?: 'STANDARD' | 'WEEKEND' | 'PUBLIC_HOLIDAY' | 'EVENING' | 'OVERNIGHT' | 'SPLIT'
+    shiftCategory?: 'ACTIVE' | 'SLEEPOVER' | 'OVERNIGHT' | 'RESPITE' | 'TRANSPORT'
+    supportRatio?: 'ONE_TO_ONE' | 'TWO_TO_ONE' | 'THREE_TO_ONE' | 'ONE_TO_TWO' | 'ONE_TO_THREE' | 'ONE_TO_FOUR'
+    isHighIntensity?: boolean
+    requiresTransport?: boolean
+    travelDistance?: number
+    // Validation control
+    validate?: boolean // Default true - validate before creation
 }
 
 export interface UpdateShiftDto {
