@@ -1,19 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { getServerSession } from '@/lib/auth'
+import prisma from '@/lib/prisma'
+import { authenticateRequest } from '@/lib/api-auth'
 
 // GET /api/v1/sites/[id]/sil-config
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await getServerSession()
-        if (!session?.user) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        }
+        const { context, error } = await authenticateRequest(request)
+        if (error) return error
 
-        const siteId = params.id
+        const { id: siteId } = await params
 
         // Get site with configuration
         const site = await prisma.site.findUnique({
@@ -30,7 +28,7 @@ export async function GET(
         // Check organization membership
         const membership = await prisma.organisationMember.findFirst({
             where: {
-                userId: session.user.id,
+                userId: context!.userId,
                 organisationId: site.organisationId
             }
         })
@@ -59,15 +57,13 @@ export async function GET(
 // PUT /api/v1/sites/[id]/sil-config
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await getServerSession()
-        if (!session?.user) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        }
+        const { context, error } = await authenticateRequest(request)
+        if (error) return error
 
-        const siteId = params.id
+        const { id: siteId } = await params
         const body = await request.json()
 
         // Get site
@@ -82,7 +78,7 @@ export async function PUT(
         // Check organization membership and permissions
         const membership = await prisma.organisationMember.findFirst({
             where: {
-                userId: session.user.id,
+                userId: context!.userId,
                 organisationId: site.organisationId
             }
         })

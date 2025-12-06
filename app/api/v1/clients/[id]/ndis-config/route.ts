@@ -1,19 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { getServerSession } from '@/lib/auth'
+import prisma from '@/lib/prisma'
+import { authenticateRequest } from '@/lib/api-auth'
 
 // GET /api/v1/clients/[id]/ndis-config
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await getServerSession()
-        if (!session?.user) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        }
+        const { context, error } = await authenticateRequest(request)
+        if (error) return error
 
-        const clientId = params.id
+        const { id: clientId } = await params
 
         // Get client with requirements
         const client = await prisma.client.findUnique({
@@ -30,7 +28,7 @@ export async function GET(
         // Check organization membership
         const membership = await prisma.organisationMember.findFirst({
             where: {
-                userId: session.user.id,
+                userId: context!.userId,
                 organisationId: client.organisationId
             }
         })
@@ -71,15 +69,13 @@ export async function GET(
 // PUT /api/v1/clients/[id]/ndis-config
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await getServerSession()
-        if (!session?.user) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        }
+        const { context, error } = await authenticateRequest(request)
+        if (error) return error
 
-        const clientId = params.id
+        const { id: clientId } = await params
         const body = await request.json()
 
         // Get client
@@ -94,7 +90,7 @@ export async function PUT(
         // Check organization membership and permissions
         const membership = await prisma.organisationMember.findFirst({
             where: {
-                userId: session.user.id,
+                userId: context!.userId,
                 organisationId: client.organisationId
             }
         })

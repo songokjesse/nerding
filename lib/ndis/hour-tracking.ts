@@ -4,7 +4,7 @@
  * Functions for calculating and managing NDIS hour utilization
  */
 
-import { prisma } from '@/lib/prisma'
+import prisma from '@/lib/prisma'
 
 export interface NDISHoursSummary {
     clientId: string
