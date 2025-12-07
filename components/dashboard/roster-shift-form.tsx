@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/collapsible"
 import { useToast } from "@/components/ui/use-toast"
 import { useRouter } from "next/navigation"
-import { ChevronDown } from "lucide-react"
+import { ChevronDown, Search } from "lucide-react"
 import { ShiftValidationIndicator } from "./rostering/shift-validation-indicator"
 import { ValidationFeedback } from "./rostering/validation-feedback"
 import {
@@ -78,6 +78,10 @@ export function RosterShiftForm({ clients, workers }: RosterShiftFormProps) {
     const [isHighIntensity, setIsHighIntensity] = useState(false)
     const [requiresTransport, setRequiresTransport] = useState(false)
     const [travelDistance, setTravelDistance] = useState("")
+
+    // Search State
+    const [clientSearch, setClientSearch] = useState("")
+    const [workerSearch, setWorkerSearch] = useState("")
 
     // Real-time validation
     useEffect(() => {
@@ -224,53 +228,75 @@ export function RosterShiftForm({ clients, workers }: RosterShiftFormProps) {
 
                 <div className="space-y-2">
                     <Label>Clients</Label>
+                    <div className="relative">
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Search clients..."
+                            value={clientSearch}
+                            onChange={(e) => setClientSearch(e.target.value)}
+                            className="pl-8 mb-2"
+                        />
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2 border p-4 rounded-md max-h-48 overflow-y-auto">
-                        {clients.map(client => (
-                            <div key={client.id} className="flex items-center space-x-2">
-                                <Checkbox
-                                    id={`client-${client.id}`}
-                                    name="clientIds"
-                                    value={client.id}
-                                    checked={selectedClients.includes(client.id)}
-                                    onCheckedChange={(checked) => {
-                                        setSelectedClients(prev =>
-                                            checked
-                                                ? [...prev, client.id]
-                                                : prev.filter(id => id !== client.id)
-                                        )
-                                    }}
-                                />
-                                <Label htmlFor={`client-${client.id}`} className="cursor-pointer font-normal">
-                                    {client.name}
-                                </Label>
-                            </div>
-                        ))}
+                        {clients
+                            .filter(client => client.name.toLowerCase().includes(clientSearch.toLowerCase()))
+                            .map(client => (
+                                <div key={client.id} className="flex items-center space-x-2">
+                                    <Checkbox
+                                        id={`client-${client.id}`}
+                                        name="clientIds"
+                                        value={client.id}
+                                        checked={selectedClients.includes(client.id)}
+                                        onCheckedChange={(checked) => {
+                                            setSelectedClients(prev =>
+                                                checked
+                                                    ? [...prev, client.id]
+                                                    : prev.filter(id => id !== client.id)
+                                            )
+                                        }}
+                                    />
+                                    <Label htmlFor={`client-${client.id}`} className="cursor-pointer font-normal">
+                                        {client.name}
+                                    </Label>
+                                </div>
+                            ))}
                     </div>
                 </div>
 
                 <div className="space-y-2">
                     <Label>Workers</Label>
+                    <div className="relative">
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Search workers..."
+                            value={workerSearch}
+                            onChange={(e) => setWorkerSearch(e.target.value)}
+                            className="pl-8 mb-2"
+                        />
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2 border p-4 rounded-md max-h-48 overflow-y-auto">
-                        {workers.map(worker => (
-                            <div key={worker.id} className="flex items-center space-x-2">
-                                <Checkbox
-                                    id={`worker-${worker.id}`}
-                                    name="workerIds"
-                                    value={worker.id}
-                                    checked={selectedWorkers.includes(worker.id)}
-                                    onCheckedChange={(checked) => {
-                                        setSelectedWorkers(prev =>
-                                            checked
-                                                ? [...prev, worker.id]
-                                                : prev.filter(id => id !== worker.id)
-                                        )
-                                    }}
-                                />
-                                <Label htmlFor={`worker-${worker.id}`} className="cursor-pointer font-normal">
-                                    {worker.name}
-                                </Label>
-                            </div>
-                        ))}
+                        {workers
+                            .filter(worker => worker.name.toLowerCase().includes(workerSearch.toLowerCase()))
+                            .map(worker => (
+                                <div key={worker.id} className="flex items-center space-x-2">
+                                    <Checkbox
+                                        id={`worker-${worker.id}`}
+                                        name="workerIds"
+                                        value={worker.id}
+                                        checked={selectedWorkers.includes(worker.id)}
+                                        onCheckedChange={(checked) => {
+                                            setSelectedWorkers(prev =>
+                                                checked
+                                                    ? [...prev, worker.id]
+                                                    : prev.filter(id => id !== worker.id)
+                                            )
+                                        }}
+                                    />
+                                    <Label htmlFor={`worker-${worker.id}`} className="cursor-pointer font-normal">
+                                        {worker.name}
+                                    </Label>
+                                </div>
+                            ))}
                     </div>
                 </div>
 
